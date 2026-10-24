@@ -1,0 +1,7 @@
+numpy
+scipy
+matplotlib
+jupyter
+ase
+asap3
+fipy

@@ -1,0 +1,32 @@
+# Course scripts and literature are copyrighted — keep them local
+*.pdf
+# ...but track my own report PDFs
+!**/report/*.pdf
+
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# MATLAB
+*.asv
+*.m~
+
+# LaTeX build files
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+
+# Large simulation output
+*.traj
