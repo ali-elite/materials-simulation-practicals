@@ -7,15 +7,15 @@ finite element code for an elastic, clamped bar with variable cross-section unde
 
 ## Tasks
 
-- [ ] **1 · Balance laws** — local form of momentum balance, static case
-- [ ] **2 · Linear elasticity** — Hooke's law in index notation; 21 independent stiffness
+- **1 · Balance laws** — local form of momentum balance, static case
+- **2 · Linear elasticity** — Hooke's law in index notation; 21 independent stiffness
   components; 1D bar boundary value problem
-- [ ] **3 · Weak form** of the bar problem
-- [ ] **4 · Shape functions** — linear elements
-- [ ] **5 · Element level** — numerical integration (trapezoidal / Newton–Cotes), element stiffness
-- [ ] **6 · Assembly** of the global system
-- [ ] **7 · Dirichlet BCs** — permutation / partitioning of the global system
-- [ ] **8 · Full analysis** — 1D FE run and post-processing
+- **3 · Weak form** of the bar problem
+- **4 · Shape functions** — linear elements
+- **5 · Element level** — numerical integration (trapezoidal / Newton–Cotes), element stiffness
+- **6 · Assembly** of the global system
+- **7 · Dirichlet BCs** — permutation / partitioning of the global system
+- **8 · Full analysis** — 1D FE run and post-processing
 
 ## Material (local only)
 

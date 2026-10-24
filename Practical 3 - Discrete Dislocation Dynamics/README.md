@@ -7,10 +7,10 @@ study the activation of a Frank–Read source in an FCC copper single crystal.
 
 ## Tasks
 
-- [ ] **1 · Setup** — build mM, configure a Cu single crystal and a Frank–Read source via the
+- **1 · Setup** — build mM, configure a Cu single crystal and a Frank–Read source via the
   `SimulationConfig` wrapper; estimate and then determine the critical shear stress; fit α
-- [ ] **2 · Segment length** — critical shear stress vs. initial segment length (50–200 nm)
-- [ ] **3 · Line orientation** — critical shear stress vs. character angle β (edge → screw)
+- **2 · Segment length** — critical shear stress vs. initial segment length (50–200 nm)
+- **3 · Line orientation** — critical shear stress vs. character angle β (edge → screw)
 
 ## Material (local only)
 

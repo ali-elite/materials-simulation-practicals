@@ -7,11 +7,11 @@ its finite-volume discretization, then apply it to solidification and Ni–Al γ
 
 ## Tasks
 
-- [ ] **Theory** — microstructure description, thermodynamics, kinetics; finite volume method
+- **Theory** — microstructure description, thermodynamics, kinetics; finite volume method
   (discretization, boundary conditions, explicit vs. implicit)
-- [ ] **1 · 1D single-component solidification** (own code and/or FiPy)
-- [ ] **2 · Bulk energy density coefficient** — Ni–Al, γ and γ′ phases
-- [ ] **3 · Gradient energy density coefficient**
+- **1 · 1D single-component solidification** (own code and/or FiPy)
+- **2 · Bulk energy density coefficient** — Ni–Al, γ and γ′ phases
+- **3 · Gradient energy density coefficient**
 
 ## Material (local only)
 
