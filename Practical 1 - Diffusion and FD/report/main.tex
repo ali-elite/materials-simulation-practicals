@@ -3,23 +3,60 @@
 % ---------------------------------------------------------------
 % Packages
 % ---------------------------------------------------------------
-\usepackage{amsmath, amssymb, amsthm, mathtools}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsthm, mathtools}
+\usepackage{libertinus}
+\usepackage{libertinust1math}
 \usepackage{bm}
 \usepackage{graphicx}
+\usepackage{xcolor}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, calc}
-\usepackage{adjustbox}
+\usetikzlibrary{arrows.meta}
+\usepackage[most]{tcolorbox}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage[numbers,sort&compress]{natbib}
-\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
-\usepackage[capitalise,noabbrev]{cleveref}
 \usepackage{microtype}
 \usepackage{parskip}
-\usepackage[margin=2.5cm]{geometry}
-\usepackage{xcolor}
+\usepackage[margin=2.5cm, headheight=20pt]{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
 
 \numberwithin{equation}{section}
+
+% ---------------------------------------------------------------
+% Corporate colours (sampled from the FAU logo) and layout
+% ---------------------------------------------------------------
+\definecolor{faublue}{RGB}{0,47,108}
+\definecolor{fautech}{RGB}{119,159,181}
+
+\hypersetup{colorlinks=true, linkcolor=faublue, citecolor=faublue, urlcolor=faublue,
+  pdftitle={Stationary Diffusion in Two Dimensions}, pdfauthor={Ali Ghelichkhani}}
+
+\titleformat{\section}{\sffamily\Large\bfseries\color{faublue}}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{faublue}}{\thesubsection}{0.7em}{}
+\titleformat{\paragraph}[runin]{\sffamily\bfseries\color{faublue}}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{1.2ex plus 0.4ex}{0.6em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{fautech}Materials Simulation Practical~1 \textbullet{} Part~I}
+\fancyhead[R]{\raisebox{-0.2\height}{\includegraphics[height=0.42cm]{figures/ww8.png}}}
+\fancyfoot[L]{\sffamily\small\color{fautech}A.~Ghelichkhani}
+\fancyfoot[R]{\sffamily\small\color{fautech}\thepage\ / \pageref*{LastPage}}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{fautech}\leaders\hrule height 0.4pt\hfill}}
+
+% Task statements of the tutorial script (paraphrased); the box never separates from the
+% heading above it, because "before" allows no page break
+\newtcolorbox{task}[1]{enhanced, sharp corners, frame hidden,
+  colback=fautech!12, borderline west={2.5pt}{0pt}{faublue},
+  left=9pt, right=9pt, top=6pt, bottom=6pt, after skip=12pt,
+  before={\par\nopagebreak\vskip 6pt},
+  fontupper=\sffamily\small,
+  before upper={{\bfseries\color{faublue}Task~#1.}\enspace}}
 \setcounter{MaxMatrixCols}{20}
 
 \theoremstyle{definition}
@@ -46,8 +83,8 @@
 \newcommand{\bLambda}{\bm{\Lambda}}
 \newcommand{\brho}{\bm{\rho}}
 \newcommand{\bb}{\bm{b}}
-\newcommand{\rhoup}{\bar{\rho}_{\mathrm{upper}}}
-\newcommand{\rholo}{\bar{\rho}_{\mathrm{lower}}}
+\newcommand{\rhoUpper}{\bar{\rho}_{\mathrm{upper}}}
+\newcommand{\rhoLower}{\bar{\rho}_{\mathrm{lower}}}
 \newcommand{\jleft}{\bar{j}_{\mathrm{left}}}
 \newcommand{\jright}{\bar{j}_{\mathrm{right}}}
 
@@ -57,20 +94,51 @@
 \definecolor{cdir}{RGB}{0,114,178}
 \definecolor{cneu}{RGB}{213,94,0}
 
-\title{Stationary Diffusion in Two Dimensions:\\
-  Governing Equations and Finite-Difference Discretization\\[0.4em]
-  \large Materials Simulation Practical~1, Part~I (Tasks~1 to~4)}
-\author{Ali Ghelichkhani\\[0.2em]
-  \small Institute of Materials Simulation (WW8),
-  Friedrich-Alexander-Universit\"at Erlangen-N\"urnberg\\
-  \small Supervisor: Xingchen Tan}
-\date{Winter semester 2026/27}
-
 \begin{document}
 
-\maketitle
+% ===============================================================
+% Title page
+% ===============================================================
+\begin{titlepage}
+  \noindent
+  \includegraphics[height=2.0cm]{figures/fau-techfak.png}\hfill
+  \raisebox{0.6cm}{\includegraphics[height=1.1cm]{figures/ww8.png}}
 
-\begin{abstract}
+  \vspace{0.2cm}
+  {\color{fautech}\rule{\textwidth}{0.6pt}}\\[0.1cm]
+  {\sffamily\small\color{fautech}Institute of Materials Simulation (WW8)\hfill
+    Winter semester 2026/27}
+
+  \vspace*{3.4cm}
+  {\sffamily\large\color{fautech}\textls[120]{MATERIALS SIMULATION PRACTICAL 1}\par}
+  \vspace{0.5cm}
+  {\sffamily\bfseries\color{faublue}\fontsize{30}{36}\selectfont
+    Stationary Diffusion\\[0.1em] in Two Dimensions\par}
+  \vspace{0.5cm}
+  {\sffamily\Large\color{faublue}Governing Equations and Finite-Difference Discretization\par}
+  \vspace{0.7cm}
+  {\color{faublue}\rule{3cm}{2pt}}\par
+  \vspace{0.4cm}
+  {\sffamily\large Report, Part~I \textbullet{} Tasks~1 to~4\par}
+
+  \vfill
+  {\sffamily
+  \renewcommand{\arraystretch}{1.35}
+  \begin{tabular}{@{}>{\small\color{fautech}}l@{\hspace{1.2em}}l@{}}
+    Author     & Ali Ghelichkhani \\
+    E-mail     & \href{mailto:ali.ghelichkhani@fau.de}{ali.ghelichkhani@fau.de} \\
+    Supervisor & Xingchen Tan \\
+    Module     & Foundations of Materials Simulation \\
+    Institute  & Institute of Materials Simulation (WW8), FAU Erlangen-N\"urnberg \\
+    Part~II    & Task~5, Jupyter notebook \texttt{task5\_fd\_solver.ipynb} \\
+    Date       & \today
+  \end{tabular}\par}
+\end{titlepage}
+
+% ===============================================================
+% Abstract and contents
+% ===============================================================
+\section*{Abstract}
   We derive the partial differential equation that governs diffusion of a single species
   in a two-dimensional anisotropic medium and prepare it for numerical solution by finite
   differences. Combining Fick's first law with the continuity equation yields Fick's
@@ -87,9 +155,9 @@
   properties guarantee a unique discrete solution that is non-negative for physically
   admissible data and depends monotonically on them, and they prepare the implementation
   reported in Part~II.
-\end{abstract}
 
 \tableofcontents
+\clearpage
 
 % ===============================================================
 \section{Introduction}\label{sec:intro}
@@ -115,8 +183,9 @@ boundary conditions (\cref{sec:bc}) and assemble and analyse the resulting linea
 (\cref{sec:system}). Stationary heat conduction obeys an equation of identical structure,
 with temperature in place of concentration and the thermal conductivity tensor in place of
 $\bD$, so all results apply to it as well. The numerical implementation and its
-verification (Task~5) form Part~II and are provided as a Jupyter notebook.
-\Cref{tab:taskmap} relates the tasks of the script to the sections of this report.
+verification (Task~5) form Part~II and are provided as a Jupyter notebook. Each task of
+the script is restated, in paraphrased form, in a shaded box at the beginning of the
+section that answers it, and \cref{tab:taskmap} gives an overview.
 
 \begin{table}[ht]
   \centering
@@ -142,6 +211,13 @@ verification (Task~5) form Part~II and are provided as a Jupyter notebook.
 % ===============================================================
 \section{Governing equations}\label{sec:pde}
 % ===============================================================
+
+\begin{task}{1.1}
+  Using the continuity equation $\partial_t\rho + \grad\cdot\bj = 0$, derive Fick's second law
+  in two dimensions for a material with anisotropic diffusion properties and without
+  sources or sinks. Classify the resulting partial differential equation as elliptic,
+  parabolic or hyperbolic.
+\end{task}
 
 \subsection{Fick's first law for anisotropic media}\label{sec:fick1}
 
@@ -213,8 +289,10 @@ second-order part of the equation remains unchanged.
 \subsection{Classification (Task 1.1)}\label{sec:classification}
 
 A linear second-order equation in the variables $\bm{z} = (z_1,\dots,z_n)$ has the form
-$\sum_{k,l} a_{kl}\,\partial_{z_k}\partial_{z_l} u + (\text{lower-order terms}) = 0$ with a
-symmetric coefficient matrix $\mathbf{a} = (a_{kl})$. Its type is determined by the signs of the
+\begin{equation*}
+  \sum_{k,l} a_{kl}\,\partial_{z_k}\partial_{z_l} u + (\text{lower-order terms}) = 0
+\end{equation*}
+with a symmetric coefficient matrix $\mathbf{a} = (a_{kl})$. Its type is determined by the signs of the
 eigenvalues of $\mathbf{a}$~\citep{evans2010}: the equation is elliptic if all eigenvalues
 are non-zero and of one sign, hyperbolic if one eigenvalue differs in sign from the
 others, and parabolic if exactly one eigenvalue vanishes, the others are of one sign and
@@ -245,6 +323,12 @@ equilibrium in which the solution at every point depends on the boundary data al
 entire boundary; it requires boundary conditions only.
 
 \subsection{Stationary diffusion in principal axes (Task 1.2)}\label{sec:stationary}
+
+\begin{task}{1.2}
+  Show that stationary diffusion is governed by
+  $\partial^2_{xx}\rho + P\,\partial^2_{yy}\rho = 0$. Explain the meaning of $x$, $y$ and $P$,
+  and how the tensor of diffusion coefficients determines $P$.
+\end{task}
 
 In the stationary state $\partial_t\rho = 0$, and~\eqref{eq:fick2} reduces to
 $\grad\cdot(\bD\,\grad\rho) = 0$. We assume a homogeneous medium.
@@ -313,6 +397,12 @@ corresponds to $P \gg 1$ or $P \ll 1$.
 
 \subsection{Transformation to the Laplace equation (Task 1.3)}\label{sec:laplace}
 
+\begin{task}{1.3}
+  Find a transformation of variables that converts the stationary equation into the
+  Laplace equation
+  $\partial^2_{\tilde{x}\tilde{x}}\tilde{\rho} + \partial^2_{\tilde{y}\tilde{y}}\tilde{\rho} = 0$.
+\end{task}
+
 We rescale the $y$ coordinate and leave $x$ unchanged,
 \begin{equation}\label{eq:scaling}
   \tilde{x} = x,
@@ -353,6 +443,13 @@ mesh.
 % ===============================================================
 
 \subsection{Central-difference scheme (Task 2.1)}\label{sec:scheme}
+
+\begin{task}{2.1}
+  Discretize the stationary equation with a second-order accurate central-difference
+  scheme on an equidistant mesh with node spacings $h_x$ and $h_y$. Denote the values at
+  neighbouring nodes by indices such as $\rho_{i+1,j}$ for the right neighbour of node
+  $(i,j)$.
+\end{task}
 
 We consider the rectangle $[0, l_x]\times[0, l_y]$ and cover it with an equidistant mesh
 of $N_x \times N_y$ nodes,
@@ -461,6 +558,20 @@ the mesh cells. The five-point stencil is shown in \cref{fig:stencil}.
 \end{remark}
 
 \subsection{Node numbering (Task 2.2a)}\label{sec:numbering}
+
+\begin{task}{2.2}
+  A rectangular domain whose edges are aligned with the principal axes of the diffusion
+  tensor is discretized by $5\times5$ nodes. Write the scheme of Task~2.1 as a linear
+  system of equations.
+  \begin{enumerate}
+    \item[(a)] Number the nodes row-wise from the top left (node~1) to the bottom right
+      (node~25), and sketch the mapping between the indices $(i,j)$ and the node number
+      for a general mesh of $N \times M$ nodes.
+    \item[(b)] Sketch the interior part of the coefficient matrix, whose entries follow from
+      the factors of the nodal values in the scheme, and explain the difficulties that
+      arise at the boundaries.
+  \end{enumerate}
+\end{task}
 
 To write the discrete equations as a linear system, the two-dimensional node indices
 $(i,j)$ must be mapped onto a single index $k$ of a solution vector. Following the
@@ -604,7 +715,7 @@ nodes cannot be formed from the stencil alone. Three difficulties arise in these
 % ===============================================================
 
 Following the script, we prescribe the concentration on the upper and lower boundaries
-(Dirichlet conditions $\rhoup$ and $\rholo$) and the diffusion flux on the left and right
+(Dirichlet conditions $\rhoUpper$ and $\rhoLower$) and the diffusion flux on the left and right
 boundaries (Neumann conditions $\jleft$ and $\jright$). \Cref{fig:bc} shows the
 configuration for the $5 \times 5$ mesh. The nodes on the upper and lower boundaries,
 labelled A to E and F to J, carry known values and are no longer unknowns. The remaining
@@ -649,8 +760,8 @@ $2 \le j \le M - 1$ receives the number $k = (M - 1 - j)N + i$.
       }
     }
     % labels
-    \node[cdir, above] at (2,1.4) {$\rho = \rhoup$};
-    \node[cdir, below] at (2,-3.4) {$\rho = \rholo$};
+    \node[cdir, above] at (2,1.4) {$\rho = \rhoUpper$};
+    \node[cdir, below] at (2,-3.4) {$\rho = \rhoLower$};
     \draw[-{Stealth}, thick, cneu] (-1.6,-1.5) -- (-2.4,-1.5)
       node[left] {$\bn_{\mathrm{left}}$};
     \draw[-{Stealth}, thick, cneu] (5.6,-1.5) -- (6.4,-1.5)
@@ -663,7 +774,7 @@ $2 \le j \le M - 1$ receives the number $k = (M - 1 - j)N + i$.
     \node[font=\footnotesize] at (5,-3.55) {$i=N{+}1$};
   \end{tikzpicture}
   \caption{Boundary conditions and discretization of the $5 \times 5$ mesh. Squares
-    (blue): Dirichlet nodes A to E ($\rhoup$) and F to J ($\rholo$), whose values are
+    (blue): Dirichlet nodes A to E ($\rhoUpper$) and F to J ($\rhoLower$), whose values are
     known. Circles: the 15 unknown nodes, numbered row-wise. Dashed circles (orange):
     ghost nodes outside the domain, used to impose the prescribed fluxes $\jleft$ and
     $\jright$ on the left and right boundaries with outward normals $\bn_{\mathrm{left}}$
@@ -673,27 +784,43 @@ $2 \le j \le M - 1$ receives the number $k = (M - 1 - j)N + i$.
 
 \subsection{Dirichlet boundary conditions (Task 3.1)}\label{sec:dirichlet}
 
+\begin{task}{3.1}
+  The concentrations $\rhoUpper$ and $\rhoLower$ are prescribed on the upper and lower
+  boundaries, so the nodes there are no longer unknowns (\cref{fig:bc}). State which nodes
+  enter the scheme at node~3, derive the corresponding linear equation using that
+  $\rho_C$ is known, and collect all known quantities on the right-hand side.
+\end{task}
+
 Node~3 is the mesh node $(i,j) = (3,4)$ in the top row of unknowns. The stencil at this
 node involves its left and right neighbours 2 and 4, its lower neighbour 8 and its upper
 neighbour C, which is the Dirichlet node $(3,5)$ with the known value
-$\rho_C = \rhoup$. Equation~\eqref{eq:stencil} at node~3 reads
+$\rho_C = \rhoUpper$. Equation~\eqref{eq:stencil} at node~3 reads
 \begin{equation}\label{eq:node3-raw}
   2(1 + \lambda)\,\rho_3 - \rho_2 - \rho_4 - \lambda\,\rho_8 - \lambda\,\rho_C = 0.
 \end{equation}
 Moving the known value to the right-hand side gives
 \begin{equation}\label{eq:node3}
   \boxed{\;
-    -\rho_2 + 2(1 + \lambda)\,\rho_3 - \rho_4 - \lambda\,\rho_8 = \lambda\,\rhoup.
+    -\rho_2 + 2(1 + \lambda)\,\rho_3 - \rho_4 - \lambda\,\rho_8 = \lambda\,\rhoUpper.
   \;}
 \end{equation}
-The Dirichlet node thus disappears from the unknowns and contributes $\lambda\,\rhoup$
+The Dirichlet node thus disappears from the unknowns and contributes $\lambda\,\rhoUpper$
 to the right-hand side; its coefficient is removed from the row. The same holds for
 nodes 1 to 5 with the upper boundary and for nodes 11 to 15 with the lower boundary,
-where $\lambda\,\rholo$ enters. Eliminating the Dirichlet nodes, rather than keeping them
-as unknowns with trivial equations $\rho_C = \rhoup$, reduces the size of the system and
+where $\lambda\,\rhoLower$ enters. Eliminating the Dirichlet nodes, rather than keeping them
+as unknowns with trivial equations $\rho_C = \rhoUpper$, reduces the size of the system and
 preserves the structure of the matrix discussed in \cref{sec:properties}.
 
 \subsection{Neumann boundary conditions (Task 3.2)}\label{sec:neumann}
+
+\begin{task}{3.2}
+  The diffusion fluxes $\jleft$ and $\jright$ are prescribed on the left and right
+  boundaries, measured along the outward normal, so that a negative value denotes flux
+  into the domain. Discretize Fick's first law by finite differences and use it to express
+  the ghost nodes outside the domain through known quantities, taking the direction of the
+  flux into account. Derive the equation for node~10 with all known quantities on the
+  right-hand side.
+\end{task}
 
 \paragraph{Prescribed flux.} On the left and right boundaries the normal component of the
 flux, $\bar{j} = \bj\cdot\bn$, is prescribed, where $\bn$ is the outward unit normal
@@ -754,7 +881,7 @@ corners of the unknown region combine both types of boundary condition. For node
 example,
 \begin{equation}\label{eq:node1}
   2(1 + \lambda)\,\rho_1 - 2\rho_2 - \lambda\,\rho_6
-  = \lambda\,\rhoup - \frac{2h_x}{D}\,\jleft.
+  = \lambda\,\rhoUpper - \frac{2h_x}{D}\,\jleft.
 \end{equation}
 
 \begin{remark}\label{rem:pureneumann}
@@ -770,6 +897,13 @@ example,
 % ===============================================================
 
 \subsection{Assembly (Task 4.1)}\label{sec:assembly}
+
+\begin{task}{4.1}
+  Assemble the complete linear system $\bA\brho = \bb_\rho - \bb_j$, in which the two
+  right-hand-side vectors carry the prescribed concentrations and fluxes. Identify which
+  entries belong to the upper, lower, left and right boundaries and which to interior
+  nodes.
+\end{task}
 
 Collecting the equations of all 15 unknown nodes, with interior rows of the
 form~\eqref{eq:row}, Dirichlet contributions as in~\eqref{eq:node3} and Neumann
@@ -807,9 +941,9 @@ medium on a square mesh ($\lambda = 1$, $h_x = h_y = h$), the system reads
   \end{bmatrix}
   =
   \underbrace{\begin{bmatrix}
-    \rhoup \\ \rhoup \\ \rhoup \\ \rhoup \\ \rhoup \\
+    \rhoUpper \\ \rhoUpper \\ \rhoUpper \\ \rhoUpper \\ \rhoUpper \\
     0 \\ 0 \\ 0 \\ 0 \\ 0 \\
-    \rholo \\ \rholo \\ \rholo \\ \rholo \\ \rholo
+    \rhoLower \\ \rhoLower \\ \rhoLower \\ \rhoLower \\ \rhoLower
   \end{bmatrix}}_{\bb_\rho}
   -
   \underbrace{\frac{2h}{D}
@@ -842,7 +976,7 @@ structure
   d \coloneqq 2(1 + \lambda),
 \end{equation}
 where $\bI$ is the $5 \times 5$ identity, and the right-hand side generalizes to
-$\bb_\rho = \lambda\,(\rhoup\bm{1}_5,\, \bm{0}_5,\, \rholo\bm{1}_5)^{\mathsf{T}}$ and
+$\bb_\rho = \lambda\,(\rhoUpper\bm{1}_5,\, \bm{0}_5,\, \rhoLower\bm{1}_5)^{\mathsf{T}}$ and
 $\bb_j = (2h_x/D)\,(\jleft, 0, 0, 0, \jright, \dots)^{\mathsf{T}}$, with $\bm{1}_5$ and
 $\bm{0}_5$ the vectors of five ones and five zeros. Each block row of $\bA$ corresponds to
 one row of unknown nodes, and each block $\bT$ couples the nodes within that row.
@@ -859,8 +993,8 @@ the second, $\bb_j$, carries the Neumann data of the left and right boundaries.
     \toprule
     Boundary & Rows $k$ & Effect on the system \\
     \midrule
-    Upper (Dirichlet) & 1 to 5 & No coupling to a block above; entry $\lambda\rhoup$ in $\bb_\rho$ \\
-    Lower (Dirichlet) & 11 to 15 & No coupling to a block below; entry $\lambda\rholo$ in $\bb_\rho$ \\
+    Upper (Dirichlet) & 1 to 5 & No coupling to a block above; entry $\lambda\rhoUpper$ in $\bb_\rho$ \\
+    Lower (Dirichlet) & 11 to 15 & No coupling to a block below; entry $\lambda\rhoLower$ in $\bb_\rho$ \\
     Left (Neumann) & 1, 6, 11 & Coefficient $-2$ at column $k + 1$; entry $2h_x\jleft/D$ in $\bb_j$ \\
     Right (Neumann) & 5, 10, 15 & Coefficient $-2$ at column $k - 1$; entry $2h_x\jright/D$ in $\bb_j$ \\
     Interior & 7, 8, 9 & Full stencil~\eqref{eq:row}; zero right-hand side \\
@@ -869,6 +1003,11 @@ the second, $\bb_j$, carries the Neumann data of the left and right boundaries.
 \end{table}
 
 \subsection{Properties of the coefficient matrix (Task 4.2)}\label{sec:properties}
+
+\begin{task}{4.2}
+  Discuss the numerical properties of the coefficient matrix, such as its structure, and
+  the parameters that determine its shape.
+\end{task}
 
 For a mesh of $N_x \times N_y$ nodes, $\bA$ is a square matrix of dimension
 $n = N_x(N_y - 2)$ with the following properties.
