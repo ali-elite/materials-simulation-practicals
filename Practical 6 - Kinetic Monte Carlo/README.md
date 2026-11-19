@@ -11,6 +11,13 @@ models of diffusion problems of increasing complexity.
 - **2 · Coarse graining** — same problem with time-dependent temperature on larger scales
 - **3 · Kick-out mechanism** — diffusion of Au in Si
 
+## Solution
+
+- `report/main.tex`, `report/main.pdf` — Part I: KMC algorithm, rates, coarse graining, kick-out
+  model and discussion of Problems 2.1–2.3
+- `kmc_diffusion.ipynb` — Part II: own KMC code (numba-compiled kernels) for all three problems,
+  with erf and rate-equation cross-checks
+
 ## Material (local only)
 
 - `04_KMC_Diffusion.pdf` — tutorial script

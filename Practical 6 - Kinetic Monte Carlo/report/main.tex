@@ -1,0 +1,469 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------
+% Packages
+% ---------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsthm, mathtools}
+\usepackage{libertinus}
+\usepackage{libertinust1math}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, patterns}
+\usepackage[most]{tcolorbox}
+\usepackage{siunitx}
+\sisetup{group-separator={\,}, group-minimum-digits=4, exponent-product=\cdot}
+\DeclareSIUnit\angstrom{\text{\AA}}
+\DeclareSIUnit\bohr{\ensuremath{a_0}}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage[margin=2.5cm, headheight=20pt]{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\numberwithin{equation}{section}
+
+% ---------------------------------------------------------------
+% Corporate colours (sampled from the FAU logo) and layout
+% ---------------------------------------------------------------
+\definecolor{faublue}{RGB}{0,47,108}
+\definecolor{fautech}{RGB}{119,159,181}
+
+\hypersetup{colorlinks=true, linkcolor=faublue, citecolor=faublue, urlcolor=faublue,
+  pdftitle={Kinetic Monte Carlo Simulation of Diffusion},
+  pdfauthor={Ali Ghelichkhani}}
+
+\titleformat{\section}{\sffamily\Large\bfseries\color{faublue}}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{faublue}}{\thesubsection}{0.7em}{}
+\titleformat{\paragraph}[runin]{\sffamily\bfseries\color{faublue}}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{1.2ex plus 0.4ex}{0.6em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{fautech}Materials Simulation Practical~6 \textbullet{} Part~I}
+\fancyhead[R]{\raisebox{-0.2\height}{\includegraphics[height=0.42cm]{figures/ww8.png}}}
+\fancyfoot[L]{\sffamily\small\color{fautech}A.~Ghelichkhani}
+\fancyfoot[R]{\sffamily\small\color{fautech}\thepage\ / \pageref*{LastPage}}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{fautech}\leaders\hrule height 0.4pt\hfill}}
+
+\newtcolorbox{task}[1]{enhanced, sharp corners, frame hidden,
+  colback=fautech!12, borderline west={2.5pt}{0pt}{faublue},
+  left=9pt, right=9pt, top=6pt, bottom=6pt, after skip=12pt,
+  before={\par\nopagebreak\vskip 6pt},
+  fontupper=\sffamily\small,
+  before upper={{\bfseries\color{faublue}Task~#1.}\enspace}}
+\setcounter{MaxMatrixCols}{20}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% ---------------------------------------------------------------
+% Notation
+% ---------------------------------------------------------------
+\newcommand{\bigO}[1]{\mathcal{O}\!\left(#1\right)}
+\newcommand{\Dint}{\textstyle\int_0^t D\,\mathrm{d}t'}
+
+\begin{document}
+
+\begin{titlepage}
+  \noindent
+  \includegraphics[height=2.0cm]{figures/fau-techfak.png}\hfill
+  \raisebox{0.6cm}{\includegraphics[height=1.1cm]{figures/ww8.png}}
+
+  \vspace{0.2cm}
+  {\color{fautech}\rule{\textwidth}{0.6pt}}\\[0.1cm]
+  {\sffamily\small\color{fautech}Institute of Materials Simulation (WW8)\hfill
+    Winter semester 2026/27}
+
+  \vspace*{3.4cm}
+  {\sffamily\large\color{fautech}\textls[120]{MATERIALS SIMULATION PRACTICAL 6}\par}
+  \vspace{0.5cm}
+  {\sffamily\bfseries\color{faublue}\fontsize{30}{36}\selectfont
+    Kinetic Monte Carlo\\[0.1em] Simulation of Diffusion\par}
+  \vspace{0.5cm}
+  {\sffamily\Large\color{faublue}Al in Cu Thin Films, Coarse Graining, and Au in Si by Kick-Out\par}
+  \vspace{0.7cm}
+  {\color{faublue}\rule{3cm}{2pt}}\par
+  \vspace{0.4cm}
+  {\sffamily\large Report, Part~I \textbullet{} Theory and Results\par}
+
+  \vfill
+  {\sffamily
+  \renewcommand{\arraystretch}{1.35}
+  \begin{tabular}{@{}>{\small\color{fautech}}l@{\hspace{1.2em}}l@{}}
+    Author     & Ali Ghelichkhani \\
+    E-mail     & \href{mailto:ali.ghelichkhani@fau.de}{ali.ghelichkhani@fau.de} \\
+    Supervisor & Frank Wendler \\
+    Module     & Foundations of Materials Simulation \\
+    Institute  & Institute of Materials Simulation (WW8), FAU Erlangen-N\"urnberg \\
+    Part~II    & Implementation, Jupyter notebook \texttt{kmc\_diffusion.ipynb} \\
+    Date       & \today
+  \end{tabular}\par}
+\end{titlepage}
+
+\section*{Abstract}
+  We implement kinetic Monte Carlo (KMC) models for three diffusion problems of increasing complexity.
+  For Al in a Cu/Cu--10\,\%Al thin-film sandwich on a 2D lattice, the jump rate follows from the
+  macroscopic diffusion coefficient as $\Gamma = D/b^2$ per direction. Because every rate is
+  proportional to $\Gamma(t)$, a time-dependent temperature enters only through the reduced time
+  $\int\Gamma\,\mathrm{d}t$. Isothermal anneals at 500\,K and 600\,K reproduce the error-function solution
+  to within the statistical noise. Heating from 300\,K to 873\,K in 1\,s gives a diffusion length of
+  $\SI{8.3}{\nano\metre}$, $77\,\%$ of it accumulated in the last $\SI{100}{\milli\second}$. A
+  coarse-grained description with cells of $\SI{1}{\micro\metre}$ and hop rates
+  $(D/L^2)\,n_i(1 - n_j/n_{\max})$ treats $\SI{0.1}{\milli\metre}$ films heated over $10^6$\,s with about
+  150 hops per diffusor, and in the scaling variable $x/\sqrt{\int D\,\mathrm dt}$ it coincides with the
+  atomistic result. The blocked-site factor cancels in the net flux, so the collective diffusion
+  coefficient stays concentration independent. For gold in a 1\,mm silicon wafer at 1050\,\textdegree C,
+  a coarse-grained KMC of the kick-out reaction $\mathrm{Au}_i \rightleftharpoons \mathrm{Au}_s + I$
+  with surface sinks for self-interstitials yields U-shaped substitutional profiles after 1000\,s. They
+  are high at the gold-coated surface, two orders of magnitude lower in the bulk, and rise again
+  towards the uncoated back surface, because gold incorporation is limited by the out-diffusion of
+  self-interstitials. An independent solution of the rate equations confirms the KMC result.
+
+\tableofcontents
+\clearpage
+
+% ===============================================================
+\section{Introduction}\label{sec:intro}
+% ===============================================================
+
+Molecular dynamics resolves atomic vibrations and is therefore limited to nanoseconds
+(Practical~4). Most of the processes that shape a microstructure --- diffusion, precipitation,
+recrystallization --- are sequences of rare, thermally activated events separated by long waiting
+times in which nothing of interest happens. Kinetic Monte Carlo~\citep{script6, voter2007} exploits
+this separation of time scales. It does not follow the vibrations; it jumps directly from one event to
+the next, with the waiting times and the choice of events drawn from the known transition rates. The
+time step is then set by the events themselves and can reach seconds or days.
+
+This report applies the method to three problems from the tutorial script: atomistic diffusion of Al
+in a Cu thin film under a time-dependent temperature (\cref{sec:atomistic}), the same problem on much
+larger length and time scales with a coarse-grained description (\cref{sec:coarse}), and the diffusion
+of gold in silicon by the kick-out mechanism (\cref{sec:kickout}). The algorithm is summarized in
+\cref{sec:kmc}; the code and all results are in Part~II.
+
+% ===============================================================
+\section{The kinetic Monte Carlo method}\label{sec:kmc}
+% ===============================================================
+
+Let the system be in state $i$, from which transitions $i\to j$ occur with rates $\nu_{ij}$. The
+residence-time (BKL, $n$-fold way) algorithm~\citep{bortz1975, gillespie1977} proceeds as follows:
+\begin{enumerate}\setlength{\itemsep}{1pt}
+  \item compute the total rate $\Gamma = \sum_j\nu_{ij}$ and the cumulative probabilities
+    $P_j = \sum_{j'\le j}\nu_{ij'}/\Gamma$;
+  \item with a uniform random number $R_1\in(0,1]$ choose the event $j$ with $P_{j-1} < R_1 \le P_j$;
+  \item with a second random number $R_2$ advance time by $t_{ij} = -\ln R_2/\Gamma$;
+  \item execute the event, update the rates that changed, and repeat.
+\end{enumerate}
+The waiting time is exponentially distributed because, for independent Poisson processes, the time to
+the first event of any of them is exponential with the total rate. The algorithm is exact for
+time-independent rates and rejection-free. The physics lies entirely in the catalogue of events and
+their rates; the cost lies in finding the event, which is why it pays to split the system into
+independent parts and to update the rate sums incrementally.
+
+\paragraph{Time-dependent rates.}
+If all rates share a common time dependence, $\nu_{ij}(t) = g(t)\,w_{ij}$, the dynamics is a
+time-homogeneous process in the reduced time $\tau = \int_0^t g(t')\,\mathrm{d}t'$: one simulates with
+the constant rates $w_{ij}$ in $\tau$ and maps back to physical time by inverting $\tau(t)$. This is
+exact for any heating schedule, and it is the situation of \cref{sec:atomistic,sec:coarse}, where every
+jump rate is proportional to the same Arrhenius factor.
+
+% ===============================================================
+\section{Atomistic KMC: Al in a Cu thin film (Problem 2.1)}\label{sec:atomistic}
+% ===============================================================
+
+\begin{task}{2.1}
+  A $\SI{100}{\nano\metre}$ Cu film is in contact with a $\SI{100}{\nano\metre}$ Cu--10\,\%Al film. Al
+  sits on substitutional sites; $D = 1.49\cdot10^{-7}\exp(-137.1\,\mathrm{kJ}/RT)$\,m$^2$/s and
+  $b = \SI{2.54}{\angstrom}$. Starting at 300\,K, the temperature rises linearly to 873\,K within 1\,s.
+  Evaluate the Al profile over this time, after verifying the implementation with isothermal anneals at
+  500\,K and 600\,K against the error-function solution. Use a 2D lattice and remember that an Al atom
+  cannot jump onto a site occupied by another Al atom.
+\end{task}
+
+\subsection{Model and rates}\label{sec:atmodel}
+
+\paragraph{Geometry.}
+The problem is homogeneous in the plane of the film, so a 2D square lattice suffices: $x$ is the film
+normal with $2\times394$ lattice planes (two times $\SI{100}{\nano\metre}$), $y$ a periodic direction of
+100 sites representing the film plane. The outer faces are reflecting. Initially $10\,\%$ of the sites
+of the right half are occupied by Al at random.
+
+\paragraph{Jump rate.}
+On a lattice of coordination $z$ in $d$ dimensions with jump rate $\Gamma$ per direction, the
+Einstein relation gives $D = z\Gamma b^2/(2d)$. For the 2D square lattice, $z = 4$ and $d = 2$, hence
+\begin{equation}\label{eq:gamma}
+  \Gamma(T) = \frac{D(T)}{b^2} = \frac{D_0}{b^2}\exp\!\left(-\frac{Q}{RT}\right),
+\end{equation}
+which ranges from $3\cdot10^{-12}\,\mathrm{s^{-1}}$ at 300\,K to $1.4\cdot10^{4}\,\mathrm{s^{-1}}$ at
+873\,K. Physically, Al moves by exchange with vacancies; the macroscopic $D$ is the dilute-limit
+impurity diffusion coefficient measured by Laik et al.~\citep{laik2008}, and \cref{eq:gamma} is the
+rate of an effective Al--Cu exchange that reproduces it.
+
+\paragraph{Blocked sites.}
+A jump onto a site occupied by another Al atom is forbidden. All allowed jumps have the same rate, so
+the BKL selection amounts to choosing uniformly among the allowed (atom, direction) pairs. It is
+simpler, and exactly equivalent, to choose uniformly among all $4N$ pairs and reject the forbidden ones
+as null events with time advancing by $-\ln R_2/(4N\Gamma)$; the rejected attempts then carry precisely
+the waiting time that the rejection-free algorithm would assign to the allowed ones. This model is the
+symmetric exclusion process, for which the expected occupation $\langle n_k\rangle$ of a site obeys
+the discrete diffusion equation \emph{exactly}, because the blocked contributions cancel pairwise. The
+collective (chemical) diffusion coefficient is therefore $D$ at any concentration, and the error
+function is the exact reference solution. Only the tracer diffusion of an individual atom is slowed
+down by blocking.
+
+\subsection{Verification at constant temperature}\label{sec:isothermal}
+
+For two semi-infinite regions with $c = 0$ and $c = c_0$ the solution of Fick's second law is
+\begin{equation}\label{eq:erf}
+  c(x,t) = \frac{c_0}{2}\left[1 + \mathrm{erf}\!\left(\frac{x - x_0}{2\sqrt{Dt}}\right)\right],
+\end{equation}
+valid as long as the diffusion length is small against the film thickness. Part~II anneals at 500\,K
+for $3.5\cdot10^{4}$ and $1.4\cdot10^{5}$\,s and at 600\,K for 145 and 578\,s, which gives
+$\sqrt{Dt} = 5$ and $\SI{10}{\nano\metre}$ in both cases. Averaged over the film plane, over four runs
+and over $\SI{5}{\nano\metre}$ slabs, the KMC profiles deviate from \cref{eq:erf} by an rms of
+$0.0024$--$0.0028$, which is the binomial noise of the slab averages. The two temperatures give
+statistically identical profiles at the same $Dt$, which illustrates the reduced-time argument of
+\cref{sec:kmc}: temperature only sets the clock.
+
+\subsection{Heating to 873\,K in one second}\label{sec:ramp}
+
+For $T(t) = 300\,\mathrm{K} + 573\,\mathrm{K}\cdot t/\mathrm{s}$ the profile is \cref{eq:erf} with
+$Dt$ replaced by $\int_0^t D(T(t'))\,\mathrm{d}t'$. \Cref{tab:ramp} lists the values, and Part~II shows
+that the KMC profiles agree with them at all times.
+
+\begin{table}[ht]
+  \centering
+  \caption{Accumulated diffusion during heating from 300\,K to 873\,K in 1\,s (Part~II).}
+  \label{tab:ramp}
+  \begin{tabular}{rrrrr}
+    \toprule
+    $t$ [s] & $T$ [K] & $\int_0^t D\,\mathrm{d}t'$ [m$^2$] & $\sqrt{\int D\,\mathrm{d}t'}$ [nm]
+      & jumps per Al atom \\
+    \midrule
+    0.50 & 586.5 & $3.1\cdot10^{-21}$ & 0.06 & 0.2 \\
+    0.80 & 758.4 & $3.0\cdot10^{-18}$ & 1.73 & 187 \\
+    0.90 & 815.7 & $1.6\cdot10^{-17}$ & 3.99 & 988 \\
+    0.95 & 844.4 & $3.4\cdot10^{-17}$ & 5.81 & 2096 \\
+    1.00 & 873.0 & $6.8\cdot10^{-17}$ & 8.27 & 4240 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+The Arrhenius dependence makes the history extremely uneven. During the first half second, below
+590\,K, an Al atom makes on average less than one jump; $77\,\%$ of the total diffusion takes place in
+the last $\SI{100}{\milli\second}$, above 816\,K. A useful approximation follows from expanding
+$1/T$ about the final temperature:
+$\int D\,\mathrm{d}t \approx D(T_{\max})\,(RT_{\max}^2/Q)/\dot T$, i.e.\ the ramp acts like an isothermal
+anneal at $T_{\max}$ for the time $RT_{\max}^2/(Q\dot T) \approx \SI{81}{\milli\second}$. At the end of
+the ramp the interdiffusion zone is only $\SI{8}{\nano\metre}$ wide: the sandwich is essentially intact.
+
+% ===============================================================
+\section{Coarse-grained KMC (Problem 2.2)}\label{sec:coarse}
+% ===============================================================
+
+\begin{task}{2.2}
+  Treat the same problem with layer thicknesses of $2\times\SI{0.1}{\milli\metre}$ and a heating time of
+  $10^6$\,s. Instead of atomic jumps use transitions of diffusors between cells of size $L$, with rates
+  chosen so that the overall diffusion coefficient is the same as in the atomistic description. Deal
+  with the concentration dependence caused by blocked sites, project the process on a single
+  coordinate, and compare with Problem~2.1 for the same number of diffusors.
+\end{task}
+
+\paragraph{Why coarse grain.}
+The atomistic model would need $4\int D\,\mathrm{d}t/b^2 \approx 5\cdot10^{9}$ jumps per atom for this
+problem and a lattice of $\sim10^{6}$ planes. Lumping many sites into a cell removes both obstacles.
+
+\paragraph{Rates.}
+Project onto $x$ and divide it into cells of length $L$, each containing $n_{\max}$ lattice sites. A
+random walk between neighbouring cells with hop rate $w$ per direction has $D = wL^2$, so matching the
+macroscopic coefficient in the dilute limit requires $w = D/L^2$. For a cell with $n_i$ diffusors next
+to a cell with $n_j$, the total rate for one diffusor to move from $i$ to $j$ is
+\begin{equation}\label{eq:cgrate}
+  W_{i\to j} = \frac{D(T(t))}{L^2}\,n_i\left(1 - \frac{n_j}{n_{\max}}\right),
+\end{equation}
+where the factor in parentheses is the probability that the target site is free --- the mean-field
+version of the blocked-site rule.
+
+\paragraph{The blocked-site problem.}
+The expected net flux between two cells is
+\begin{equation}\label{eq:cgflux}
+  W_{i\to j} - W_{j\to i}
+  = \frac{D}{L^2}\left[n_i\left(1 - \frac{n_j}{n_{\max}}\right) - n_j\left(1 - \frac{n_i}{n_{\max}}\right)\right]
+  = \frac{D}{L^2}\,(n_i - n_j),
+\end{equation}
+so the blocking factors cancel and the collective diffusion coefficient is concentration independent,
+exactly as in the atomistic exclusion process of \cref{sec:atmodel}. The factor must nevertheless be
+included: it keeps every cell below its capacity and makes the coarse-grained model the projection of
+the atomistic one, in which each individual diffusor \emph{is} slowed down. Had the measured $D$
+depended on concentration, as real Cu--Al interdiffusion coefficients do~\citep{laik2008}, it would be
+evaluated at the mean concentration of the two cells, $D(\bar c_{ij})$.
+
+\paragraph{Results.}
+We use cells of $L = \SI{1}{\micro\metre}$, 200 cells across the sandwich and the same 3940 diffusors
+as in Problem~2.1, which gives $n_{\max} = 394$ and $10\,\%$ occupation in the Al-rich layer. All rates
+are proportional to $D(t)$, so the simulation runs in reduced time $\int D\,\mathrm{d}t/L^2$ with the
+BKL algorithm. Heating over $10^6$\,s accumulates $\sqrt{\int D\,\mathrm{d}t} = \SI{8.3}{\micro\metre}$
+--- the same number as in Problem~2.1 in micrometres instead of nanometres, because the ramp is
+$10^6$ times slower and the diffusion length scales with the square root of the time. A diffusor then
+makes only about 150 hops. The profiles agree with the error function to an rms of
+$0.003$--$0.004$, with and without the blocking factor, as \cref{eq:cgflux} predicts. In the scaling
+variable $(x-x_0)/\sqrt{\int D\,\mathrm{d}t}$ the atomistic and the coarse-grained profiles fall on the
+same curve: both are realizations of the same diffusion equation, sampled on scales that differ by a
+factor of a thousand in length and a million in time.
+
+% ===============================================================
+\section{Au in Si by the kick-out mechanism (Problem 2.3)}\label{sec:kickout}
+% ===============================================================
+
+\begin{task}{2.3}
+  Gold diffuses into a $\SI{1}{\milli\metre}$ Si wafer at 1050\,\textdegree C. Interstitial gold
+  $\mathrm{Au}_i$ is fast, substitutional gold $\mathrm{Au}_s$ immobile, and they interchange by
+  $\mathrm{Au}_i + \mathrm{Si} \rightleftharpoons \mathrm{Au}_s + I$. At the left surface
+  $\mathrm{Au}_s$ is kept at its solubility $5.38\cdot10^{-7}$; the surfaces are ideal sinks for
+  self-interstitials $I$; $D_{\mathrm{Au}} \approx D_I = 10^{-9}$\,m$^2$/s; $a = \SI{5.4}{\angstrom}$;
+  the kick-out rates are 600\,s$^{-1}$ for $\mathrm{Au}_i$ and 10\,s$^{-1}$ for $I$. Set up a
+  coarse-grained simulation and evaluate the profiles after 1000\,s. Explain their shape.
+\end{task}
+
+\subsection{Model}\label{sec:komodel}
+
+The wafer is divided into 100 cells of $\Delta x = \SI{10}{\micro\metre}$; each cell holds $n_i$
+interstitial gold atoms, $n_s$ substitutional gold atoms and $n_I$ self-interstitials. With
+$C_0 = 8/a^3 = 5.1\cdot10^{28}\,\mathrm{m^{-3}}$ silicon sites, a cell cross-section of
+$(\SI{43}{\nano\metre})^2$ makes the solubility correspond to $N_s^{\mathrm{eq}} = 500$ substitutional
+atoms per cell. The events are:
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item hops of $\mathrm{Au}_i$ and $I$ to a neighbouring cell, $D/\Delta x^2 = 10\,\mathrm{s^{-1}}$ per
+    particle and direction;
+  \item kick-out of a Si atom by an interstitial gold atom, $\mathrm{Au}_i \to \mathrm{Au}_s + I$, with
+    $r_f = k_f\,n_i$ and $k_f = \SI{600}{\per\second}$, since practically every neighbour of an
+    $\mathrm{Au}_i$ is a Si atom;
+  \item the reverse reaction $\mathrm{Au}_s + I \to \mathrm{Au}_i$, in which a self-interstitial
+    kicks out a substitutional gold atom, with
+    \begin{equation}\label{eq:reverse}
+      r_r = k_r\,n_s\,\frac{n_I}{N_I^{\mathrm{eq}}},\qquad k_r = \SI{10}{\per\second}.
+    \end{equation}
+\end{itemize}
+The $10\,\mathrm{s^{-1}}$ is the rate at which a substitutional gold atom is kicked out when the
+self-interstitials are at equilibrium, and the rate scales with the local $I$ concentration. This is
+exactly the kick-out model of Lerch and Stolwijk~\citep{lerch1998}: at 1050\,\textdegree C they give
+$k_2C_I^{\mathrm{eq}} = \SI{10}{\per\second}$, $C_i^{\mathrm{eq}}/C_s^{\mathrm{eq}} = 0.0166$ and
+$C_I^{\mathrm{eq}}/C_s^{\mathrm{eq}} = 6.68\cdot10^{-5}$, so that the mass-action relation
+$k_1 = k_2C_s^{\mathrm{eq}}C_I^{\mathrm{eq}}/C_i^{\mathrm{eq}}$ yields $k_1 \approx \SI{600}{\per\second}$
+--- the two rates of the script. In local equilibrium $r_f = r_r$ becomes
+\begin{equation}\label{eq:localeq}
+  \frac{C_i}{C_i^{\mathrm{eq}}} = \frac{C_s}{C_s^{\mathrm{eq}}}\,\frac{C_I}{C_I^{\mathrm{eq}}}.
+\end{equation}
+Boundary conditions: keeping $\mathrm{Au}_s$ at its solubility at the coated surface means, through
+\cref{eq:localeq}, keeping $\mathrm{Au}_i$ at its solubility
+$C_i^{\mathrm{eq}} = (k_r/k_f)\,C_s^{\mathrm{eq}}$ there; it is implemented as a ghost cell that feeds
+$\mathrm{Au}_i$ into the first cell and absorbs atoms hopping back. Both surfaces annihilate $I$, and
+$\mathrm{Au}_i$ cannot leave through the uncoated back surface.
+
+The kick-out is fast compared with transport: an interstitial gold atom lives $1/k_f = \SI{1.7}{\milli\second}$
+and travels only $\sqrt{D/k_f} = \SI{1.3}{\micro\metre}$ before it is incorporated, unless the reverse
+reaction frees it again. The simulation therefore spends almost all events on the reaction pair, about
+$4\cdot10^8$ events per run, which is why the event loop is compiled. The deterministic rate
+equations of the same model are solved as an independent check.
+
+\subsection{Results: the ``weird'' profiles}\label{sec:koresults}
+
+After 1000\,s the substitutional gold profile (Part~II) is not an erfc decaying from the coated surface
+but U-shaped. $C_s/C_s^{\mathrm{eq}}$ is $0.47$ in the first cell, falls to a minimum of $0.013$ at a
+depth of $\SI{0.7}{\milli\metre}$, and rises again to $0.13$ at the uncoated back surface, which has no
+gold source. The self-interstitials show the inverse shape, a broad maximum of up to about $30\,C_I^{\mathrm{eq}}$
+in the bulk, and the interstitial gold decreases only gradually through the wafer.
+The KMC and the rate equations agree within the noise of the KMC. The explanation:
+\begin{enumerate}\setlength{\itemsep}{2pt}
+  \item Interstitial gold is mobile and penetrates the whole wafer within the annealing time
+    ($\sqrt{Dt} = \SI{1}{\milli\metre}$), but it is rare: its solubility is only $1.7\,\%$ of that of
+    substitutional gold.
+  \item Each incorporation creates a self-interstitial. A dislocation-free crystal has no internal
+    sinks, so in the bulk the $I$ accumulate until the reverse reaction balances the forward one. With
+    $C_I \gg C_I^{\mathrm{eq}}$, \cref{eq:localeq} allows only a small $C_s$: incorporation in the bulk
+    is choked and proceeds only as fast as the $I$ can diffuse out.
+  \item Near both surfaces the $I$ escape quickly, $C_I$ stays close to equilibrium, and the gold
+    arriving as $\mathrm{Au}_i$ is incorporated freely. The gold enters at the front, but it is
+    incorporated wherever the self-interstitials can leave, and that includes the back surface.
+\end{enumerate}
+The rate of gold incorporation is therefore controlled not by the diffusion of gold but by the
+out-diffusion of the self-interstitials it produces, which is the key result of the kick-out analysis
+of Au, Pt and Zn in silicon~\citep{gosele1980, lerch1998}. The same mechanism explains why the surface
+concentration approaches the solubility only slowly, as Lerch and Stolwijk observed experimentally, and
+why the gold profiles in dislocated silicon, where dislocations act as bulk sinks for $I$, look
+completely different.
+
+% ===============================================================
+\section{Conclusion}\label{sec:conclusion}
+% ===============================================================
+
+Kinetic Monte Carlo reduces the dynamics of a system to a catalogue of events and their rates, and
+everything else follows from the residence-time algorithm. For substitutional diffusion on a lattice
+the rate per jump is $D/b^2$, blocking turns the model into an exclusion process whose collective
+diffusion is still exactly Fickian, and a time-dependent temperature only rescales time. With these
+three ingredients the atomistic simulation of the Cu/Cu--Al sandwich reproduces the error-function
+profiles at 500\,K and 600\,K and shows that a 1\,s heating ramp to 873\,K interdiffuses only
+$\SI{8}{\nano\metre}$, almost all of it in the final $\SI{100}{\milli\second}$. Coarse graining with hop
+rates $(D/L^2)\,n_i(1-n_j/n_{\max})$ preserves the diffusion coefficient by construction, handles films
+a thousand times thicker heated a million times longer with about 150 hops per diffusor, and gives the
+same profile in the scaling variable. For gold in silicon the coarse-grained KMC of the kick-out
+reaction produces the characteristic U-shaped profiles with a deep minimum in the bulk and a second
+maximum at the uncoated surface: gold incorporation is limited by the escape of the self-interstitials
+that the reaction creates, not by the transport of gold itself.
+
+\begin{thebibliography}{99}
+
+\bibitem{script6}
+Institute of Materials Simulation (WW8),
+``Kinetic Monte Carlo simulation,''
+Materials Simulation Practical, tutorial script,
+Friedrich-Alexander-Universit\"at Erlangen-N\"urnberg.
+
+\bibitem{voter2007}
+A.~F.~Voter,
+``Introduction to the kinetic Monte Carlo method,''
+in \textit{Radiation Effects in Solids}, K.~E.~Sickafus, E.~A.~Kotomin and B.~P.~Uberuaga (Eds.),
+Springer, Dordrecht, 2007, pp.~1--23.
+
+\bibitem{bortz1975}
+A.~B.~Bortz, M.~H.~Kalos and J.~L.~Lebowitz,
+``A new algorithm for Monte Carlo simulation of Ising spin systems,''
+\textit{Journal of Computational Physics},
+vol.~17, no.~1, pp.~10--18, 1975.
+
+\bibitem{gillespie1977}
+D.~T.~Gillespie,
+``Exact stochastic simulation of coupled chemical reactions,''
+\textit{The Journal of Physical Chemistry},
+vol.~81, no.~25, pp.~2340--2361, 1977.
+
+\bibitem{laik2008}
+A.~Laik, K.~Bhanumurthy and G.~B.~Kale,
+``Diffusion in Cu(Al) solid solution,''
+\textit{Defect and Diffusion Forum},
+vol.~279, pp.~63--69, 2008.
+
+\bibitem{lerch1998}
+W.~Lerch and N.~A.~Stolwijk,
+``Diffusion of gold in silicon during rapid thermal annealing: Effectiveness of the surface as a sink
+for self-interstitials,''
+\textit{Journal of Applied Physics},
+vol.~83, no.~3, pp.~1312--1320, 1998.
+
+\bibitem{gosele1980}
+U.~G\"osele, W.~Frank and A.~Seeger,
+``Mechanism and kinetics of the diffusion of gold in silicon,''
+\textit{Applied Physics},
+vol.~23, no.~4, pp.~361--368, 1980.
+
+\end{thebibliography}
+
+\end{document}
