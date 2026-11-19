@@ -1,0 +1,514 @@
+\documentclass[11pt,a4paper]{article}
+
+% ---------------------------------------------------------------
+% Packages
+% ---------------------------------------------------------------
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amsthm, mathtools}
+\usepackage{libertinus}
+\usepackage{libertinust1math}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, patterns}
+\usepackage[most]{tcolorbox}
+\usepackage{siunitx}
+\sisetup{group-separator={\,}, group-minimum-digits=4, exponent-product=\cdot}
+\DeclareSIUnit\angstrom{\text{\AA}}
+\DeclareSIUnit\bohr{\ensuremath{a_0}}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage[margin=2.5cm, headheight=20pt]{geometry}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{hyperref}
+\usepackage[capitalise,noabbrev]{cleveref}
+
+\numberwithin{equation}{section}
+
+% ---------------------------------------------------------------
+% Corporate colours (sampled from the FAU logo) and layout
+% ---------------------------------------------------------------
+\definecolor{faublue}{RGB}{0,47,108}
+\definecolor{fautech}{RGB}{119,159,181}
+
+\hypersetup{colorlinks=true, linkcolor=faublue, citecolor=faublue, urlcolor=faublue,
+  pdftitle={Discrete Dislocation Dynamics},
+  pdfauthor={Ali Ghelichkhani}}
+
+\titleformat{\section}{\sffamily\Large\bfseries\color{faublue}}{\thesection}{0.75em}{}
+\titleformat{\subsection}{\sffamily\large\bfseries\color{faublue}}{\thesubsection}{0.7em}{}
+\titleformat{\paragraph}[runin]{\sffamily\bfseries\color{faublue}}{}{0pt}{}
+\titlespacing*{\paragraph}{0pt}{1.2ex plus 0.4ex}{0.6em}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\sffamily\small\color{fautech}Materials Simulation Practical~3 \textbullet{} Part~I}
+\fancyhead[R]{\raisebox{-0.2\height}{\includegraphics[height=0.42cm]{figures/ww8.png}}}
+\fancyfoot[L]{\sffamily\small\color{fautech}A.~Ghelichkhani}
+\fancyfoot[R]{\sffamily\small\color{fautech}\thepage\ / \pageref*{LastPage}}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{fautech}\leaders\hrule height 0.4pt\hfill}}
+
+\newtcolorbox{task}[1]{enhanced, sharp corners, frame hidden,
+  colback=fautech!12, borderline west={2.5pt}{0pt}{faublue},
+  left=9pt, right=9pt, top=6pt, bottom=6pt, after skip=12pt,
+  before={\par\nopagebreak\vskip 6pt},
+  fontupper=\sffamily\small,
+  before upper={{\bfseries\color{faublue}Task~#1.}\enspace}}
+\setcounter{MaxMatrixCols}{20}
+
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}[section]
+
+% ---------------------------------------------------------------
+% Notation
+% ---------------------------------------------------------------
+\newcommand{\bigO}[1]{\mathcal{O}\!\left(#1\right)}
+\newcommand{\tauc}{\tau_{\mathrm{c}}}
+\newcommand{\bb}{\bm{b}}
+\newcommand{\bl}{\bm{l}}
+
+\begin{document}
+
+\begin{titlepage}
+  \noindent
+  \includegraphics[height=2.0cm]{figures/fau-techfak.png}\hfill
+  \raisebox{0.6cm}{\includegraphics[height=1.1cm]{figures/ww8.png}}
+
+  \vspace{0.2cm}
+  {\color{fautech}\rule{\textwidth}{0.6pt}}\\[0.1cm]
+  {\sffamily\small\color{fautech}Institute of Materials Simulation (WW8)\hfill
+    Winter semester 2026/27}
+
+  \vspace*{3.4cm}
+  {\sffamily\large\color{fautech}\textls[120]{MATERIALS SIMULATION PRACTICAL 3}\par}
+  \vspace{0.5cm}
+  {\sffamily\bfseries\color{faublue}\fontsize{30}{36}\selectfont
+    Discrete Dislocation\\[0.1em] Dynamics\par}
+  \vspace{0.5cm}
+  {\sffamily\Large\color{faublue}Activation of a Frank--Read Source in Copper with microMegas\par}
+  \vspace{0.7cm}
+  {\color{faublue}\rule{3cm}{2pt}}\par
+  \vspace{0.4cm}
+  {\sffamily\large Report, Part~I \textbullet{} Theory and Results\par}
+
+  \vfill
+  {\sffamily
+  \renewcommand{\arraystretch}{1.35}
+  \begin{tabular}{@{}>{\small\color{fautech}}l@{\hspace{1.2em}}l@{}}
+    Author     & Ali Ghelichkhani \\
+    E-mail     & \href{mailto:ali.ghelichkhani@fau.de}{ali.ghelichkhani@fau.de} \\
+    Supervisor & Leon Pyka \\
+    Module     & Foundations of Materials Simulation \\
+    Institute  & Institute of Materials Simulation (WW8), FAU Erlangen-N\"urnberg \\
+    Part~II    & Simulations, Jupyter notebook \texttt{ddd\_frank\_read.ipynb} \\
+    Date       & \today
+  \end{tabular}\par}
+\end{titlepage}
+
+\section*{Abstract}
+  We use the discrete dislocation dynamics code microMegas to determine the critical resolved shear
+  stress $\tauc$ of a Frank--Read source on the $(\bar1\bar1\bar1)[10\bar1]$ slip system of a copper
+  single crystal, and compare it with the line-tension estimate $\tauc = \alpha\mu b/L$. A
+  $\SI{100}{\nano\metre}$ edge source operates at $\tauc = \SI{104.3}{\mega\pascal}$, i.e.\
+  $\alpha = 0.99$, about $2.7$ times the large-bow-out estimate of Hirth and Lothe with a core radius of
+  one Burgers vector. The value is insensitive to the number of time steps, to the box size between
+  $1.5$ and $\SI{6}{\micro\metre}$ and, for this length, to the re-discretization length; it is
+  dominated by the line-tension model, which changes it by a factor of two (Friedel:
+  $\SI{46.7}{\mega\pascal}$, Foreman: $\SI{100.3}{\mega\pascal}$, DeWit: $\SI{104.3}{\mega\pascal}$). Over
+  $L = 48$--$\SI{203}{\nano\metre}$ the critical stress falls as $L^{-0.72}$, weaker than the $1/L$ of a
+  constant $\alpha$ and close to the $\ln(L/\rho)/L$ of the Hirth formula, so $\alpha$ increases with
+  $L$ from $0.95$ to $1.38$. For fixed $L = \SI{100}{\nano\metre}$, $\alpha$ rises from $0.99$ for an edge
+  source to $1.80$ for a screw source, reproducing the qualitative trend of orientation-dependent line
+  tension. The scripts and the full set of runs are in Part~II.
+
+\tableofcontents
+\clearpage
+
+% ===============================================================
+\section{Introduction}\label{sec:intro}
+% ===============================================================
+
+Between the atomistic scale of molecular dynamics and the continuum scale of crystal plasticity lies
+a range, roughly $\SI{100}{\nano\metre}$ to some tens of micrometres, in which the plastic response of a
+crystal is governed by the motion and interaction of individual dislocations. Molecular dynamics cannot
+reach these sizes and times, and continuum models do not resolve the dislocations whose collective
+behaviour they average. Discrete dislocation dynamics (DDD) closes the gap~\citep{script3, fivel2008}:
+it represents the dislocations as lines made of straight segments embedded in a linear elastic
+continuum and moves them under the forces of the applied stress and of each other.
+
+This report studies the simplest multiplication mechanism, the Frank--Read source. We review the DDD
+algorithm and the microMegas code (\cref{sec:ddd}), derive the critical stress of a Frank--Read source
+from the line-tension approximation (\cref{sec:fr}), and present the simulations: the set-up and the
+determination of $\tauc$ and $\alpha$ for a $\SI{100}{\nano\metre}$ edge source (\cref{sec:task1}),
+the dependence on the source length and on the simulation parameters (\cref{sec:task2}), and the
+dependence on the character angle (\cref{sec:task3}).
+
+\begin{table}[ht]
+  \centering
+  \caption{Correspondence between the tasks of the tutorial script and this report.}
+  \label{tab:taskmap}
+  \begin{tabularx}{0.9\linewidth}{lXl}
+    \toprule
+    Task & Content & Section \\
+    \midrule
+    1.1--1.5 & microMegas, wrapper, Cu crystal, $\SI{100}{\nano\metre}$ edge source & \ref{sec:setup} \\
+    1.6 & estimate of the critical stress & \ref{sec:estimate} \\
+    1.7, 1.8 & determination of $\tauc$; fit of $\alpha$ & \ref{sec:determination} \\
+    2 & $\tauc$ vs.\ segment length; influence of simulation parameters & \ref{sec:task2} \\
+    3 & $\tauc$ and $\alpha$ vs.\ character angle $\beta$ & \ref{sec:task3} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+% ===============================================================
+\section{Discrete dislocation dynamics}\label{sec:ddd}
+% ===============================================================
+
+Every DDD code repeats the same three steps~\citep{devincre2011}:
+\begin{enumerate}\setlength{\itemsep}{1pt}
+  \item evaluate the stress at every segment, the sum of the applied stress and the internal stress
+    field of all other segments;
+  \item evaluate the force per unit length on each segment from the Peach--Koehler formula,
+    \begin{equation}\label{eq:pk}
+      F = \left(\tau_{\mathrm{ext}} + \tau_{\mathrm{int}}\right)b\,l,
+    \end{equation}
+    in which only the glide component of the resolved shear stress enters for glide motion;
+  \item move the segments with a mobility law $v = M(F)$ and an explicit Euler step,
+    $r(t+\Delta t) = r(t) + v(t)\,\Delta t$, and update the topology: split segments that have grown
+    too long, merge short ones, and handle junctions, annihilation and cross-slip.
+\end{enumerate}
+The internal stress is long-ranged ($\propto 1/r$), which makes step~1 the expensive one. The
+self-interaction of a curved line is the delicate part: the stress of a segment on itself diverges and
+must be regularized, either by a core cut-off in the full elastic interaction or, in the simpler
+approach used for the local part of the self-force, by a \emph{line tension} that pulls a curved line
+straight.
+
+\paragraph{microMegas.}
+microMegas (mM)~\citep{devincre2011} discretizes the lines on a lattice: each segment is a multiple of
+one of eight elementary vectors per slip system --- pure screw, pure edge and two mixed orientations in
+both senses --- so that a curved line is a polygon of these directions. The elementary screw vector is
+\texttt{echelle} Burgers vectors long ($13.5\,b = \SI{3.45}{\nano\metre}$), the edge vector
+$\SI{5.97}{\nano\metre}$. Segments that exceed a length \texttt{ldis\_act} are re-discretized. The local
+line tension is chosen with the key \texttt{linten}: Friedel's constant $T = \mu b^2/2$, the DeWit--Koehler
+form that depends on the character of the segment and on the logarithm of the local curvature radius,
+or Foreman's variant. The mobility is viscous, $v = \tau b/B$, with a small friction stress of
+$\SI{0.5}{\mega\pascal}$. The course provides a Python wrapper whose dataclass \texttt{SimulationConfig}
+sets the segment length, the character angle $\beta$, the box size and the start point, and whose
+nested \texttt{ContCuConfig} holds all 41 control parameters of the \texttt{ContCu} file; the wrapper
+writes the three input files and launches the engine.
+
+% ===============================================================
+\section{The Frank--Read source}\label{sec:fr}
+% ===============================================================
+
+A segment of length $L$ pinned at both ends bows out under a resolved shear stress $\tau$. The
+Peach--Koehler force per unit length, $\tau b$, acts normal to the line and is balanced by the line
+tension $T$ of the curved arc, $\tau b = T/r$ for an arc of radius $r$. As $\tau$ grows, $r$ decreases
+until the arc becomes a semicircle, $r = L/2$, the smallest radius a segment of length $L$ can have.
+Beyond this point the equilibrium is unstable: the arc expands at decreasing curvature, its two arms
+wrap around the pinning points, meet and annihilate, and a closed loop is released while the original
+segment is restored. The source then repeats indefinitely. The critical stress is therefore
+\begin{equation}\label{eq:taucsimple}
+  \tauc = \frac{2T}{bL} = \alpha\,\frac{\mu b}{L},
+\end{equation}
+with $\alpha = 1$ for Friedel's line tension $T = \mu b^2/2$. A better line tension accounts for the
+character of the line and for the logarithmic dependence of the elastic energy on its extent. Hirth and
+Lothe~\citep{hirth1982} give for the large bow-out
+\begin{equation}\label{eq:hirth}
+  b\tauc = \frac{\mu b^2}{4\pi(1-\nu)\,r}
+  \left\{\left[1 - \frac{\nu}{2}\left(3 - 4\cos^2\beta\right)\right]\ln\frac{L}{\rho} - 1 + \frac{\nu}{2}\right\},
+  \qquad r = \frac{L}{2},
+\end{equation}
+where $\beta$ is the angle between the initial line and the Burgers vector and $\rho$ the inner cut-off
+radius. Comparing with \cref{eq:taucsimple},
+\begin{equation}\label{eq:alpha}
+  \alpha(\beta, L) = \frac{1}{2\pi(1-\nu)}
+  \left\{\left[1 - \frac{\nu}{2}\left(3 - 4\cos^2\beta\right)\right]\ln\frac{L}{\rho} - 1 + \frac{\nu}{2}\right\}.
+\end{equation}
+Two consequences matter for the simulations. First, $\alpha$ is not a constant but grows with
+$\ln(L/\rho)$, so $\tauc$ decreases more slowly than $1/L$. Second, $\alpha$ is larger for a screw
+source ($\cos\beta = 1$) than for an edge source ($\cos\beta = 0$): the arms of a bowing edge source are
+screw-like, and screw segments have the higher line tension~\citep{anderson2017}. For $\nu = 0.33$ and
+$L = 1000\rho$ the script quotes $\alpha_{\mathrm{edge}} \approx 0.5$ and
+$\alpha_{\mathrm{screw}} \approx 1.5$; evaluating \cref{eq:alpha} directly gives $0.63$ and $1.71$.
+
+% ===============================================================
+\section{The $\SI{100}{\nano\metre}$ edge source (Task 1)}\label{sec:task1}
+% ===============================================================
+
+\subsection{Set-up (Tasks 1.1--1.5)}\label{sec:setup}
+
+\begin{task}{1}
+  Clone the microMegas repository, read the instructions and identify the parameters of the
+  \texttt{SimulationConfig} dataclass. Set up a Cu single crystal in a
+  $\SI{3}{\micro\metre}\times\SI{3}{\micro\metre}\times\SI{3}{\micro\metre}$ box with a pinned
+  $\SI{100}{\nano\metre}$ edge segment in the $(\bar1\bar1\bar1)$ plane with Burgers vector $[10\bar1]$.
+  Estimate the critical activation stress, determine it from simulations with stresses around the
+  estimate, and determine $\alpha$.
+\end{task}
+
+The reference slip system of the material file \texttt{dd/in/Cu} is exactly $(\bar1\bar1\bar1)[10\bar1]$,
+so a segment generated with $\beta = 90^\circ$ is the requested edge source. Its length is a multiple of
+the elementary edge vector: 17 of them give $L = \SI{101.5}{\nano\metre}$, which we use in all
+evaluations. The material data are $\mu = \SI{42}{\giga\pascal}$, $\nu = 0.431$ and
+$b = \SI{0.2553}{\nano\metre}$, so $\mu b = \SI{10.72}{\giga\pascal\nano\metre}$. With \texttt{shear = T}
+the applied value \texttt{sigma0} is the resolved shear stress on the most highly stressed system; the
+run log confirms this by printing \texttt{Tau = sigma0} and the uniaxial equivalent $\sigma_0/0.408$,
+the Schmid factor of $\{111\}\langle110\rangle$ for a $[001]$ axis.
+
+Running the wrapper on macOS required two fixes to the environment and two to the wrapper, all
+documented in Part~II: the precompiled Linux object files in \texttt{dd/bin/mm.objs} had to be removed
+before \texttt{make mm}; the output directories \texttt{dd/out/\{debug,vtk,SigInt\_dir,GammaboxVTK\}} had
+to be created; \texttt{MicroMegasWrapper.run} passes the box size as a tuple that the segment generator
+then modifies in place, which raises an exception; and the generator writes the box size as floating
+point numbers, which the Fortran list-directed read rejects.
+
+The simulations are run at constant stress (\texttt{mode\_deformation = 4}). This gives a sharp
+criterion: below $\tauc$ the line bows out to a stable arc within a few hundred steps, the number of
+segments stays at five to seven and the plastic strain saturates near $10^{-6}\,\%$; above $\tauc$ the
+source operates, emits loops, the number of segments grows to hundreds and the plastic strain increases
+without bound. The source is classified as active if the number of segments exceeds three times its
+initial value plus thirty, and $\tauc$ is bracketed by a geometric bisection to $1\,\%$.
+
+\subsection{Estimate (Task 1.6)}\label{sec:estimate}
+
+With the microMegas values and \cref{eq:alpha} the estimates for $L = \SI{101.5}{\nano\metre}$ are
+\begin{equation}\label{eq:estimate}
+  \tauc \approx
+  \begin{cases}
+    \SI{39}{\mega\pascal} & (\alpha = 0.37,\ \rho = b,\ \nu = 0.431),\\
+    \SI{49}{\mega\pascal} & (\alpha = 0.46,\ L = 1000\rho,\ \nu = 0.431),\\
+    \SI{55}{\mega\pascal} & (\rho = b,\ \nu = 0.33),
+  \end{cases}
+\end{equation}
+which is the 50--65\,MPa range quoted in the wrapper documentation. The simulations were started around
+these values and the bracket widened upwards when the source did not operate.
+
+\subsection{Determination of $\tauc$ and $\alpha$ (Tasks 1.7, 1.8)}\label{sec:determination}
+
+The source does not operate at $\SI{60}{}$, $\SI{80}{}$ or $\SI{95}{\mega\pascal}$; the bisection gives
+\begin{equation}\label{eq:result1}
+  \boxed{\;\tauc = \SI{104.3}{\mega\pascal},\qquad
+  \alpha = \frac{\tauc L}{\mu b} = 0.99\;}
+\end{equation}
+for the default control parameters, about $2.7$ times the estimate with $\rho = b$. To find the origin of
+the difference, \cref{tab:robust} repeats the determination with one parameter changed at a time.
+
+\begin{table}[ht]
+  \centering
+  \caption{Critical stress of the $\SI{101.5}{\nano\metre}$ edge source for variations of the control
+    parameters (Part~II).}
+  \label{tab:robust}
+  \begin{tabular}{lrr}
+    \toprule
+    Variation & $\tauc$ [MPa] & $\alpha$ \\
+    \midrule
+    reference (DeWit line tension, 4000 steps, $\SI{3}{\micro\metre}$ box) & 104.3 & 0.99 \\
+    12\,000 steps & 104.3 & 0.99 \\
+    box $\SI{1.5}{\micro\metre}$ and $\SI{6}{\micro\metre}$ & 104.3 & 0.99 \\
+    re-discretization length $\SI{0.1}{\micro\metre}$ & 104.3 & 0.99 \\
+    Foreman line tension & 100.3 & 0.95 \\
+    Friedel line tension & 46.7 & 0.44 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Neither the run length nor the box size has any influence: a single source in a micrometre-sized box
+does not feel its periodic images, and four thousand steps of $\SI{1.25}{\pico\second}$ are ample for a
+line moving at the viscous velocity $\tau b/B$ of several hundred metres per second. What controls
+$\tauc$ is the line tension. With Friedel's constant line tension the source operates at
+$\SI{47}{\mega\pascal}$, within $20\,\%$ of the Hirth estimate, whereas the default DeWit--Koehler form and
+Foreman's variant, which raise the line tension of the screw-like arms of the bowing edge source, double
+the critical stress. In other words, the critical stress of a source in DDD is essentially an input of
+the model --- it is set by how the self-interaction of the curved line is regularized --- and the value
+$\alpha \approx 1$ is a property of microMegas' default line tension as much as of copper.
+
+% ===============================================================
+\section{Dependence on the segment length (Task 2)}\label{sec:task2}
+% ===============================================================
+
+\begin{task}{2}
+  Starting from Task~1, vary the length of the initial segment from $\SI{50}{}$ to
+  $\SI{200}{\nano\metre}$, determine $\tauc$ for each length, plot the results together with the
+  analytical solution and the relative error, explain for which length simulation and theory agree
+  best, and investigate which simulation parameters (box size, minimum segment length, \dots) affect the
+  results.
+\end{task}
+
+\begin{table}[ht]
+  \centering
+  \caption{Critical stress against segment length for the edge source (Part~II). ``Eq.~(6)'' is
+    $\alpha\mu b/L$ with $\alpha = 0.99$ from Task~1; ``Hirth'' is \cref{eq:hirth} with $\rho = b$.}
+  \label{tab:length}
+  \begin{tabular}{rrrrrrrr}
+    \toprule
+    $L$ [nm] & $\tauc$ DeWit & eq.~(6) & error & Hirth & error & $\alpha$ & $\tauc$ Friedel \\
+    \midrule
+     47.7 & 213.0 & 221.7 & $-3.9\,\%$  & 66.9 & $+218\,\%$ & 0.95 & 83.9 \\
+     77.6 & 121.1 & 136.4 & $-11.3\,\%$ & 47.8 & $+153\,\%$ & 0.88 & 50.6 \\
+    101.5 & 104.3 & 104.3 & $0.0\,\%$   & 39.3 & $+165\,\%$ & 0.99 & 46.7 \\
+    125.3 &  91.7 &  84.5 & $+8.6\,\%$  & 33.6 & $+173\,\%$ & 1.07 & 45.8 \\
+    149.2 &  83.1 &  70.9 & $+17.1\,\%$ & 29.5 & $+182\,\%$ & 1.16 & 45.8 \\
+    173.1 &  77.5 &  61.2 & $+26.7\,\%$ & 26.3 & $+194\,\%$ & 1.25 & 45.8 \\
+    202.9 &  73.0 &  52.2 & $+40.0\,\%$ & 23.3 & $+214\,\%$ & 1.38 & 45.8 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\Cref{tab:length} summarizes the results; Part~II plots them with the two analytical curves and the
+relative errors. With the default line tension $\tauc$ decreases monotonically from $\SI{213}{}$ to
+$\SI{73}{\mega\pascal}$, but more slowly than $1/L$: a power-law fit gives $\tauc \propto L^{-0.72}$.
+
+\paragraph{Where simulation and theory agree.}
+Against \cref{eq:taucsimple} with the $\alpha$ fitted at $\SI{100}{\nano\metre}$ the agreement is by
+construction exact at $\SI{100}{\nano\metre}$ and degrades in both directions, to $-4\,\%$ at
+$\SI{48}{\nano\metre}$ and $+40\,\%$ at $\SI{203}{\nano\metre}$. The growth of the error with $L$ is
+physical: a constant $\alpha$ misses the logarithm in \cref{eq:alpha}, which makes long sources
+relatively harder to operate. The Hirth formula contains that logarithm, and indeed the simulated
+exponent $-0.72$ is close to its effective exponent of about $-0.8$ over this range; its absolute level,
+however, is a factor $2.5$--$3$ too low for the DeWit line tension, as discussed in \cref{sec:determination}.
+With Friedel's line tension the simulation agrees best with Hirth at $L \approx \SI{78}{\nano\metre}$
+($+6\,\%$) and $\SI{100}{\nano\metre}$ ($+19\,\%$). For short sources the agreement deteriorates because
+the line is built from only eight to seventeen elementary vectors, so the semicircular critical
+configuration is represented by a handful of segments and its curvature is poorly resolved. For sources
+longer than about $\SI{125}{\nano\metre}$ the Friedel results stop decreasing and stay at
+$\SI{46}{\mega\pascal}$ regardless of $L$; switching cross-slip off does not change this, and the friction
+stress of the mobility law is only $\SI{0.5}{\mega\pascal}$, so we attribute this floor to the lattice
+discretization of the line rather than to physics. The best overall agreement is therefore found for
+intermediate lengths of $\SI{75}{}$--$\SI{100}{\nano\metre}$, long enough to resolve the bow-out and
+short enough to stay clear of the floor.
+
+\paragraph{Which parameters matter.}
+Part~II repeats the determination for $L = \SI{50}{}$ and $\SI{200}{\nano\metre}$ with modified
+parameters:
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \emph{Box size} ($\SI{1.5}{\micro\metre}$ instead of $\SI{3}{\micro\metre}$): no effect at either
+    length; the source is far smaller than the box.
+  \item \emph{Re-discretization length} \texttt{ldis\_act} ($\SI{0.1}{\micro\metre}$ instead of
+    $\SI{0.25}{\micro\metre}$): $-27\,\%$ at $\SI{50}{\nano\metre}$, $-4\,\%$ at $\SI{200}{\nano\metre}$.
+    Finer re-discretization lets the short source bow into a better-resolved arc.
+  \item \emph{Elementary segment length} \texttt{echelle} ($10\,b$ instead of $13.5\,b$): $+274\,\%$ at
+    $\SI{50}{\nano\metre}$, $+13\,\%$ at $\SI{200}{\nano\metre}$. Changing the lattice spacing of the
+    discretization changes the realized geometry and the local line tension.
+  \item \emph{Line tension model}: a factor of two at all lengths (\cref{tab:robust,tab:length}).
+  \item \emph{Number of steps}: no effect once the bowed configuration has relaxed.
+\end{itemize}
+The minimum segment length and the line-tension treatment are the parameters that matter; the
+dependence on them is strongest for short sources, which are represented by the fewest segments.
+
+% ===============================================================
+\section{Dependence on the line orientation (Task 3)}\label{sec:task3}
+% ===============================================================
+
+\begin{task}{3}
+  Starting from Task~1, change the initial line orientation gradually from edge to screw by changing
+  the angle $\beta$ between line and Burgers vector, keeping the line on the slip plane and composing it
+  of pure edge, screw or mixed segments. Determine $\tauc$ and $\alpha$ for each orientation and plot
+  $\alpha$ against $\beta$.
+\end{task}
+
+For $\beta = 0^\circ$, $60^\circ$ and $90^\circ$ the line is a single native segment of the
+corresponding character. For intermediate angles the wrapper's generator composes a ``staircase'' of
+$N_e$ edge and $N_s$ screw elementary vectors with $N_e/N_s$ chosen from
+$L\sin\beta/l_{\mathrm{edge}}$ and $L\cos\beta/l_{\mathrm{screw}}$, distributed evenly along the line
+(a Bresenham sequence) and grouped into blocks. Because the edge and screw vectors are perpendicular in
+the slip plane, the realized end-to-end length and angle are
+$L = \sqrt{(N_e l_{\mathrm{edge}})^2 + (N_s l_{\mathrm{screw}})^2}$ and
+$\beta = \arctan(N_e l_{\mathrm{edge}}/N_s l_{\mathrm{screw}})$, which differ from the targets by up to
+one degree and two nanometres; $\alpha$ is evaluated with the realized values.
+
+\begin{table}[ht]
+  \centering
+  \caption{Critical stress and geometric factor against character angle for $L \approx
+    \SI{100}{\nano\metre}$ (Part~II). The Hirth values use \cref{eq:alpha} with $\rho = b$ and
+    $\nu = 0.431$.}
+  \label{tab:beta}
+  \begin{tabular}{rrrrrr}
+    \toprule
+    $\beta$ target & $\beta$ realized & $L$ [nm] & $\tauc$ [MPa] & $\alpha$ mM & $\alpha$ Hirth \\
+    \midrule
+    90 & 90.0 & 101.5 & 104.3 & 0.99 & 0.37 \\
+    75 & 73.9 &  99.4 & 121.1 & 1.12 & 0.48 \\
+    60 & 60.0 &  99.9 & 101.3 & 0.94 & 0.73 \\
+    45 & 44.7 & 101.8 & 133.7 & 1.27 & 1.10 \\
+    30 & 29.0 &  98.5 & 132.4 & 1.22 & 1.47 \\
+    15 & 13.9 &  99.4 & 155.1 & 1.44 & 1.73 \\
+     0 &  0.0 &  99.9 & 192.9 & 1.80 & 1.81 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\Cref{tab:beta} lists the results; Part~II plots $\alpha(\beta)$ with the Hirth curves. The trend is the
+expected one: $\alpha$ grows from $0.99$ for the edge source to $1.80$ for the screw source, a ratio of
+$1.8$. In the semicircular critical configuration the arc of an edge source has its screw-like
+parts near the pinning points, whereas a screw source has them at the apex, where the curvature drives
+the instability; with an orientation-dependent line tension, which is highest for screw character,
+the screw source is therefore the harder one to activate~\citep{anderson2017}. The Hirth formula predicts
+a much stronger dependence, a ratio of $4.9$ for $\rho = b$: the two agree almost exactly for the screw source ($1.80$
+against $1.81$), but microMegas puts the edge source $2.7$ times higher. Two points deviate from a smooth curve. The
+$60^\circ$ source, built from one native mixed segment, is easier to activate than the staircase sources
+on either side of it, and the $75^\circ$ staircase is harder than the pure edge. Both reflect the
+discretization: a native segment and a staircase of the same nominal angle are different initial
+configurations, and the steps of a staircase act as additional curvature that the line has to remove
+before it can bow out smoothly.
+
+% ===============================================================
+\section{Conclusion}\label{sec:conclusion}
+% ===============================================================
+
+A Frank--Read source in copper simulated with microMegas operates at a well-defined critical resolved
+shear stress that can be bracketed to one percent by constant-stress runs. For a
+$\SI{100}{\nano\metre}$ edge source on $(\bar1\bar1\bar1)[10\bar1]$ we find
+$\tauc = \SI{104}{\mega\pascal}$ and $\alpha = 0.99$. The critical stress decreases as $L^{-0.72}$
+between $50$ and $\SI{200}{\nano\metre}$, so $\alpha$ is not a constant but grows with the source length,
+as the logarithm in the Hirth--Lothe line-tension formula requires; and $\alpha$ increases from edge to
+screw sources by a factor of $1.8$. The absolute level, however, is set by the numerical model rather
+than by the crystal: the line-tension treatment changes $\tauc$ by a factor of two, and the
+elementary segment length and re-discretization length change it by tens of percent for short sources,
+whereas the box size and the run length have no influence at all. The practical lesson is that
+the critical stress of a source in DDD has to be calibrated --- against atomistic simulations or
+experiments --- before the code is used to predict the strength of a dislocation microstructure.
+
+\begin{thebibliography}{99}
+
+\bibitem{script3}
+Institute of Materials Simulation (WW8),
+``Discrete dislocation dynamics simulation,''
+Materials Simulation Practical, tutorial script,
+Friedrich-Alexander-Universit\"at Erlangen-N\"urnberg.
+
+\bibitem{fivel2008}
+M.~Fivel,
+``Discrete dislocation dynamics: Principles and recent applications,''
+in \textit{Multiscale Modeling of Heterogenous Materials}, O.~Cazacu (Ed.),
+Wiley, 2008, pp.~17--36.
+
+\bibitem{devincre2011}
+B.~Devincre, R.~Madec, G.~Monnet, S.~Queyreau, R.~Gatti and L.~Kubin,
+``Modeling crystal plasticity with dislocation dynamics simulations: The `microMegas' code,''
+in \textit{Mechanics of Nano-objects}, Presses des Mines, Paris, 2011, pp.~81--100.
+
+\bibitem{hirth1982}
+J.~P.~Hirth and J.~Lothe,
+\textit{Theory of Dislocations},
+2nd~ed., Wiley, New York, 1982.
+
+\bibitem{anderson2017}
+P.~M.~Anderson, J.~P.~Hirth and J.~Lothe,
+\textit{Theory of Dislocations},
+3rd~ed., Cambridge University Press, Cambridge, 2017.
+
+\bibitem{hull2011}
+D.~Hull and D.~J.~Bacon,
+\textit{Introduction to Dislocations},
+5th~ed., Butterworth-Heinemann, Oxford, 2011.
+
+\end{thebibliography}
+
+\end{document}

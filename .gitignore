@@ -30,3 +30,6 @@ venv/
 
 # Large simulation output
 *.traj
+
+# Course microMegas repository (third-party, cloned and built locally)
+practical_DDD/
