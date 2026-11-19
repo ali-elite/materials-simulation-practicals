@@ -18,6 +18,13 @@ statics, and simulate bond breaking of a carbon nanotube with molecular dynamics
   - NVT uniaxial tension test
   - bond-breaking energy with the Brenner potential
 
+## Solution
+
+- `report/main.tex`, `report/main.pdf` — Part I: literature research on the potentials (Task 2.1),
+  the strain states for the elastic constants (Tasks 3.1, 3.3, 3.4) and the discussion of all results
+- `atomistic.ipynb` — Part II: molecular statics of Cu and molecular dynamics of a (5,5) nanotube
+  (Tasks 3.2, 3.5, 3.6, 4.1–4.5)
+
 ## Material (local only)
 
 - `Practical 4 - Atomistic.pdf` — tutorial script
