@@ -13,6 +13,13 @@ its finite-volume discretization, then apply it to solidification and Ni–Al γ
 - **2 · Bulk energy density coefficient** — Ni–Al, γ and γ′ phases
 - **3 · Gradient energy density coefficient**
 
+## Solution
+
+- `report/main.tex`, `report/main.pdf` — Part I: phase-field theory, finite volume method, analytic
+  equilibrium interface and discussion of Tasks 1–3
+- `phasefield.ipynb` — Part II: 1D Allen–Cahn solidification (FiPy), Ni–Al `f0`, Cahn–Hilliard
+  interface energy vs `Kc`, 2D spinodal decomposition
+
 ## Material (local only)
 
 - `Practical05_PhaseField_Method.pdf` — tutorial script
