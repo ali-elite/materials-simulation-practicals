@@ -15,7 +15,7 @@ its finite-volume discretization, then apply it to solidification and Ni–Al γ
 
 ## Solution
 
-- `report/main.tex`, `report/main.pdf` — Part I: phase-field theory, finite volume method, analytic
+- `report/main.tex`, `report/Ghelichkhani_MatSim_Practical5_PhaseField.pdf` — Part I: phase-field theory, finite volume method, analytic
   equilibrium interface and discussion of Tasks 1–3
 - `phasefield.ipynb` — Part II: 1D Allen–Cahn solidification (FiPy), Ni–Al `f0`, Cahn–Hilliard
   interface energy vs `Kc`, 2D spinodal decomposition

@@ -20,7 +20,7 @@ statics, and simulate bond breaking of a carbon nanotube with molecular dynamics
 
 ## Solution
 
-- `report/main.tex`, `report/main.pdf` — Part I: literature research on the potentials (Task 2.1),
+- `report/main.tex`, `report/Ghelichkhani_MatSim_Practical4_Atomistic.pdf` — Part I: literature research on the potentials (Task 2.1),
   the strain states for the elastic constants (Tasks 3.1, 3.3, 3.4) and the discussion of all results
 - `atomistic.ipynb` — Part II: molecular statics of Cu and molecular dynamics of a (5,5) nanotube
   (Tasks 3.2, 3.5, 3.6, 4.1–4.5)

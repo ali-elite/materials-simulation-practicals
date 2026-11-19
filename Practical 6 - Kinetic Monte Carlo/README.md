@@ -13,7 +13,7 @@ models of diffusion problems of increasing complexity.
 
 ## Solution
 
-- `report/main.tex`, `report/main.pdf` — Part I: KMC algorithm, rates, coarse graining, kick-out
+- `report/main.tex`, `report/Ghelichkhani_MatSim_Practical6_KMC.pdf` — Part I: KMC algorithm, rates, coarse graining, kick-out
   model and discussion of Problems 2.1–2.3
 - `kmc_diffusion.ipynb` — Part II: own KMC code (numba-compiled kernels) for all three problems,
   with erf and rate-equation cross-checks

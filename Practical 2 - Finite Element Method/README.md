@@ -19,7 +19,7 @@ finite element code for an elastic, clamped bar with variable cross-section unde
 
 ## Solution
 
-- `report/main.tex`, `report/main.pdf` — Part I: theory and hand calculations (Tasks 1.1–3.1,
+- `report/main.tex`, `report/Ghelichkhani_MatSim_Practical2_FEM.pdf` — Part I: theory and hand calculations (Tasks 1.1–3.1,
   5.2, 5.3, 6.1, 6.3, 7.1)
 - `fem1d.ipynb` — Part II: the 1D finite element code (Tasks 4.1, 4.2, 5.1–5.3, 6.2, 6.3, 7.2, 8.1)
 

@@ -14,7 +14,7 @@ study the activation of a Frank–Read source in an FCC copper single crystal.
 
 ## Solution
 
-- `report/main.tex`, `report/main.pdf` — Part I: DDD and Frank–Read theory, discussion of Tasks 1–3
+- `report/main.tex`, `report/Ghelichkhani_MatSim_Practical3_DDD.pdf` — Part I: DDD and Frank–Read theory, discussion of Tasks 1–3
 - `ddd_frank_read.ipynb` — Part II: microMegas runs (critical stress by bisection, length and
   orientation studies, parameter sensitivity)
 
