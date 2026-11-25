@@ -2,6 +2,7 @@
 *.pdf
 # ...but track my own report PDFs
 !**/report/*.pdf
+!**/report/figures/*.pdf
 
 # macOS
 .DS_Store

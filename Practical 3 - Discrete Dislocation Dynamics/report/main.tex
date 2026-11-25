@@ -124,7 +124,8 @@
   constant $\alpha$ and close to the $\ln(L/\rho)/L$ of the Hirth formula, so $\alpha$ increases with
   $L$ from $0.95$ to $1.38$. For fixed $L = \SI{100}{\nano\metre}$, $\alpha$ rises from $0.99$ for an edge
   source to $1.80$ for a screw source, reproducing the qualitative trend of orientation-dependent line
-  tension. The scripts and the full set of runs are in Part~II.
+  tension. All figures and tables are produced by the Jupyter notebook of Part~II, which contains the
+  scripts and the full set of runs.
 
 \tableofcontents
 \clearpage
@@ -275,6 +276,28 @@ source operates, emits loops, the number of segments grows to hundreds and the p
 without bound. The source is classified as active if the number of segments exceeds three times its
 initial value plus thirty, and $\tauc$ is bracketed by a geometric bisection to $1\,\%$.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_regimes.pdf}
+  \caption{Constant-stress runs of the $\SI{101.5}{\nano\metre}$ edge source at six resolved shear
+    stresses. Left: plastic strain against time step (logarithmic). Right: number of segments of the
+    dislocation line. Below $\tauc = \SI{104.3}{\mega\pascal}$ (60, 95 and $\SI{104}{\mega\pascal}$)
+    the line bows out to a stable arc; above it (106, 120 and $\SI{200}{\mega\pascal}$) the source
+    operates and multiplies the line.}
+  \label{fig:regimes}
+\end{figure}
+
+\Cref{fig:regimes} shows the two regimes. At 60, 95 and $\SI{104}{\mega\pascal}$ the plastic strain
+rises during the first 300--400 steps, while the segment bows out, and then stays constant at about
+$10^{-6}\,\%$; the line keeps five to seven segments, so it has reached a stable equilibrium arc. At
+$\SI{106}{\mega\pascal}$, only $2\,\%$ above $\tauc$, the arc stays at this level for about 2000 steps and
+then becomes unstable: the strain grows by more than two orders of magnitude and the number of segments rises
+to about fifty as the first loops are emitted. At 120 and $\SI{200}{\mega\pascal}$ the incubation time
+shrinks to about 1000 and 400 steps, the strain reaches $5\times10^{-3}$ and $3\times10^{-2}\,\%$, and
+the line grows to 120--200 segments. The incubation time thus diverges as $\tau$ approaches $\tauc$
+from above, which is why a run must be long enough to separate a slowly activating source from a stable
+one. The repetition with 12\,000 steps in \cref{tab:robust} confirms that 4000 steps are sufficient.
+
 \subsection{Estimate (Task 1.6)}\label{sec:estimate}
 
 With the microMegas values and \cref{eq:alpha} the estimates for $L = \SI{101.5}{\nano\metre}$ are
@@ -342,12 +365,13 @@ $\alpha \approx 1$ is a property of microMegas' default line tension as much as 
 
 \begin{table}[ht]
   \centering
-  \caption{Critical stress against segment length for the edge source (Part~II). ``Eq.~(6)'' is
-    $\alpha\mu b/L$ with $\alpha = 0.99$ from Task~1; ``Hirth'' is \cref{eq:hirth} with $\rho = b$.}
+  \caption{Critical stress against segment length for the edge source. ``$\alpha\mu b/L$'' is
+    \cref{eq:taucsimple} with $\alpha = 0.99$ from Task~1; ``Hirth'' is \cref{eq:hirth} with $\rho = b$.
+    Stresses in MPa.}
   \label{tab:length}
   \begin{tabular}{rrrrrrrr}
     \toprule
-    $L$ [nm] & $\tauc$ DeWit & eq.~(6) & error & Hirth & error & $\alpha$ & $\tauc$ Friedel \\
+    $L$ [nm] & $\tauc$ DeWit & $\alpha\mu b/L$ & error & Hirth & error & $\alpha$ & $\tauc$ Friedel \\
     \midrule
      47.7 & 213.0 & 221.7 & $-3.9\,\%$  & 66.9 & $+218\,\%$ & 0.95 & 83.9 \\
      77.6 & 121.1 & 136.4 & $-11.3\,\%$ & 47.8 & $+153\,\%$ & 0.88 & 50.6 \\
@@ -360,9 +384,26 @@ $\alpha \approx 1$ is a property of microMegas' default line tension as much as 
   \end{tabular}
 \end{table}
 
-\Cref{tab:length} summarizes the results; Part~II plots them with the two analytical curves and the
-relative errors. With the default line tension $\tauc$ decreases monotonically from $\SI{213}{}$ to
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_length.pdf}
+  \caption{Edge source of length $L$. Left: critical stress from microMegas with the DeWit (default) and
+    the Friedel line tension, compared with $\alpha\mu b/L$ for $\alpha = 0.99$ from Task~1
+    (\cref{eq:taucsimple}) and with the Hirth--Lothe formula \cref{eq:hirth} for $\rho = b$. Centre:
+    relative error of the simulated $\tauc$ with respect to the analytical values. Right: geometric
+    factor $\alpha = \tauc L/\mu b$ against $L$.}
+  \label{fig:length}
+\end{figure}
+
+\Cref{tab:length} lists the results and \cref{fig:length} plots them with the two analytical curves
+and the relative errors. With the default line tension $\tauc$ decreases monotonically from $\SI{213}{}$ to
 $\SI{73}{\mega\pascal}$, but more slowly than $1/L$: a power-law fit gives $\tauc \propto L^{-0.72}$.
+In the left panel of \cref{fig:length} the DeWit points lie above the dashed $1/L$ curve for long
+sources and slightly below it for short ones, and both sets of simulated points lie above the dotted
+Hirth curve. The centre panel shows the corresponding errors, and the right panel shows the same
+information as a geometric factor: with the DeWit line tension $\alpha$ passes through a minimum of $0.88$ at $\SI{78}{\nano\metre}$ and rises to $1.38$,
+with the Friedel line tension from $0.37$ to $0.87$, while the Hirth formula predicts only a weak
+logarithmic increase from $0.30$ to $0.44$.
 
 \paragraph{Where simulation and theory agree.}
 Against \cref{eq:taucsimple} with the $\alpha$ fitted at $\SI{100}{\nano\metre}$ the agreement is by
@@ -384,8 +425,27 @@ intermediate lengths of $\SI{75}{}$--$\SI{100}{\nano\metre}$, long enough to res
 short enough to stay clear of the floor.
 
 \paragraph{Which parameters matter.}
-Part~II repeats the determination for $L = \SI{50}{}$ and $\SI{200}{\nano\metre}$ with modified
-parameters:
+The determination was repeated for the shortest and the longest source with one parameter changed at
+a time (\cref{tab:params}):
+
+\begin{table}[ht]
+  \centering
+  \caption{Critical stress of the shortest and the longest edge source for modified simulation
+    parameters, with the change relative to the reference.}
+  \label{tab:params}
+  \begin{tabular}{lrrrr}
+    \toprule
+    & \multicolumn{2}{c}{$L = \SI{47.7}{\nano\metre}$} & \multicolumn{2}{c}{$L = \SI{202.9}{\nano\metre}$} \\
+    \cmidrule(lr){2-3}\cmidrule(lr){4-5}
+    Variation & $\tauc$ [MPa] & change & $\tauc$ [MPa] & change \\
+    \midrule
+    reference & 213.0 & --- & 73.0 & --- \\
+    box $\SI{1.5}{\micro\metre}$ & 213.0 & $0.0\,\%$ & 73.0 & $0.0\,\%$ \\
+    \texttt{ldis\_act} $= \SI{0.1}{\micro\metre}$ & 155.1 & $-27.2\,\%$ & 70.2 & $-3.9\,\%$ \\
+    \texttt{echelle} $= 10$ & 796.0 & $+273.7\,\%$ & 82.2 & $+12.6\,\%$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 \begin{itemize}\setlength{\itemsep}{2pt}
   \item \emph{Box size} ($\SI{1.5}{\micro\metre}$ instead of $\SI{3}{\micro\metre}$): no effect at either
     length; the source is far smaller than the box.
@@ -443,7 +503,21 @@ one degree and two nanometres; $\alpha$ is evaluated with the realized values.
   \end{tabular}
 \end{table}
 
-\Cref{tab:beta} lists the results; Part~II plots $\alpha(\beta)$ with the Hirth curves. The trend is the
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_orientation.pdf}
+  \caption{Source of length $L \approx \SI{100}{\nano\metre}$ with character angle $\beta$ ($0^\circ$:
+    screw, $90^\circ$: edge). Left: critical stress from microMegas. Right: geometric factor $\alpha$
+    from microMegas compared with \cref{eq:alpha} for $\rho = b$, $\nu = 0.431$ (microMegas values) and
+    for $L = 1000\rho$, $\nu = 0.33$ (values of the tutorial script).}
+  \label{fig:orientation}
+\end{figure}
+
+\Cref{tab:beta} lists the results and \cref{fig:orientation} plots them. The critical stress falls from
+$\SI{193}{\mega\pascal}$ for the screw source to $\SI{104}{\mega\pascal}$ for the edge source (left panel).
+In the right panel the simulated $\alpha$ starts on the Hirth curves at $\beta = 0^\circ$, falls below
+them between $15^\circ$ and $30^\circ$, crosses them near $40^\circ$ and stays well above them towards the
+edge orientation, so the simulated curve is much flatter than the analytical ones. The trend is the
 expected one: $\alpha$ grows from $0.99$ for the edge source to $1.80$ for the screw source, a ratio of
 $1.8$. In the semicircular critical configuration the arc of an edge source has its screw-like
 parts near the pinning points, whereas a screw source has them at the apex, where the curvature drives
