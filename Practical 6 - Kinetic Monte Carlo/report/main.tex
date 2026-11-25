@@ -125,7 +125,8 @@
   with surface sinks for self-interstitials yields U-shaped substitutional profiles after 1000\,s. They
   are high at the gold-coated surface, two orders of magnitude lower in the bulk, and rise again
   towards the uncoated back surface, because gold incorporation is limited by the out-diffusion of
-  self-interstitials. An independent solution of the rate equations confirms the KMC result.
+  self-interstitials. An independent solution of the rate equations confirms the KMC result. The code
+  is the Jupyter notebook of Part~II; all its figures and results are included in this report.
 
 \tableofcontents
 \clearpage
@@ -146,7 +147,8 @@ This report applies the method to three problems from the tutorial script: atomi
 in a Cu thin film under a time-dependent temperature (\cref{sec:atomistic}), the same problem on much
 larger length and time scales with a coarse-grained description (\cref{sec:coarse}), and the diffusion
 of gold in silicon by the kick-out mechanism (\cref{sec:kickout}). The algorithm is summarized in
-\cref{sec:kmc}; the code and all results are in Part~II.
+\cref{sec:kmc}; the code is the Jupyter notebook of Part~II, and its figures and results are presented
+in the sections that follow.
 
 % ===============================================================
 \section{The kinetic Monte Carlo method}\label{sec:kmc}
@@ -224,23 +226,48 @@ For two semi-infinite regions with $c = 0$ and $c = c_0$ the solution of Fick's 
 \begin{equation}\label{eq:erf}
   c(x,t) = \frac{c_0}{2}\left[1 + \mathrm{erf}\!\left(\frac{x - x_0}{2\sqrt{Dt}}\right)\right],
 \end{equation}
-valid as long as the diffusion length is small against the film thickness. Part~II anneals at 500\,K
+valid as long as the diffusion length is small against the film thickness. We anneal at 500\,K
 for $3.5\cdot10^{4}$ and $1.4\cdot10^{5}$\,s and at 600\,K for 145 and 578\,s, which gives
 $\sqrt{Dt} = 5$ and $\SI{10}{\nano\metre}$ in both cases. Averaged over the film plane, over four runs
 and over $\SI{5}{\nano\metre}$ slabs, the KMC profiles deviate from \cref{eq:erf} by an rms of
 $0.0024$--$0.0028$, which is the binomial noise of the slab averages. The two temperatures give
 statistically identical profiles at the same $Dt$, which illustrates the reduced-time argument of
-\cref{sec:kmc}: temperature only sets the clock.
+\cref{sec:kmc}: temperature only sets the clock. \Cref{fig:isothermal} shows the profiles across the
+interface at $x_0 = \SI{100}{\nano\metre}$: the Al fraction rises from $0$ in the pure Cu film to
+$c_0 = 0.1$ in the alloy film, over a zone that doubles in width when $\sqrt{Dt}$ doubles from 5 to
+$\SI{10}{\nano\metre}$, and the KMC points scatter around the error functions. Each run executes
+$2.2\cdot10^{7}$ accepted jumps in about two seconds.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_01.pdf}
+  \caption{Isothermal annealing of the Cu/Cu--10\,\%Al sandwich at 500\,K (left) and 600\,K (right)
+    for $\sqrt{Dt} = 5$ and $\SI{10}{\nano\metre}$. Markers: KMC, averaged over the film plane, four
+    runs and $\SI{5}{\nano\metre}$ slabs. Lines: error-function solution~\eqref{eq:erf}.}
+  \label{fig:isothermal}
+\end{figure}
 
 \subsection{Heating to 873\,K in one second}\label{sec:ramp}
 
 For $T(t) = 300\,\mathrm{K} + 573\,\mathrm{K}\cdot t/\mathrm{s}$ the profile is \cref{eq:erf} with
-$Dt$ replaced by $\int_0^t D(T(t'))\,\mathrm{d}t'$. \Cref{tab:ramp} lists the values, and Part~II shows
-that the KMC profiles agree with them at all times.
+$Dt$ replaced by $\int_0^t D(T(t'))\,\mathrm{d}t'$. \Cref{tab:ramp} lists the values, and
+\cref{fig:ramp} shows that the KMC profiles agree with them at all times: up to $t = \SI{0.5}{\second}$
+the interface is still sharp, and in the last half second it broadens to the final width of a few
+nanometres. The right panel shows why: the diffusion coefficient rises by fifteen orders of magnitude
+during the ramp.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_02.pdf}
+  \caption{Heating from 300\,K to 873\,K in 1\,s. Left: KMC profiles (markers) at five times and the
+    error-function solution with $Dt$ replaced by $\int_0^t D\,\mathrm{d}t'$ (lines). Right: diffusion
+    coefficient of Al in Cu during the ramp.}
+  \label{fig:ramp}
+\end{figure}
 
 \begin{table}[ht]
   \centering
-  \caption{Accumulated diffusion during heating from 300\,K to 873\,K in 1\,s (Part~II).}
+  \caption{Accumulated diffusion during heating from 300\,K to 873\,K in 1\,s.}
   \label{tab:ramp}
   \begin{tabular}{rrrrr}
     \toprule
@@ -318,6 +345,40 @@ variable $(x-x_0)/\sqrt{\int D\,\mathrm{d}t}$ the atomistic and the coarse-grain
 same curve: both are realizations of the same diffusion equation, sampled on scales that differ by a
 factor of a thousand in length and a million in time.
 
+\Cref{fig:coarse} shows both results. In the left panel the coarse-grained profiles at four times
+during the last $2\cdot10^{5}$\,s of the ramp broaden around $x_0 = \SI{100}{\micro\metre}$, and the runs
+with (circles) and without (crosses) the blocking factor are indistinguishable; their rms deviations
+from the error function are $0.0033$--$0.0043$ (\cref{tab:cg}). In the right panel the final atomistic
+and coarse-grained profiles, plotted against $(x-x_0)/\sqrt{\int D\,\mathrm{d}t}$, both follow the same
+error function. The four coarse-grained runs take $\SI{4.5}{\second}$ in total.
+
+\begin{table}[ht]
+  \centering
+  \caption{Coarse-grained KMC during the last part of the ramp: diffusion length and rms deviation of the
+    profiles from the error function with and without the blocking factor.}
+  \label{tab:cg}
+  \begin{tabular}{rrrrr}
+    \toprule
+    $t$ [s] & $T$ [K] & $\sqrt{\int D\,\mathrm{d}t}$ [\textmu m] & rms, blocking & rms, no blocking \\
+    \midrule
+    $8.0\cdot10^{5}$ & 758 & 1.73 & 0.0035 & 0.0040 \\
+    $9.0\cdot10^{5}$ & 816 & 3.99 & 0.0039 & 0.0039 \\
+    $9.5\cdot10^{5}$ & 844 & 5.81 & 0.0042 & 0.0043 \\
+    $1.0\cdot10^{6}$ & 873 & 8.27 & 0.0038 & 0.0033 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_03.pdf}
+  \caption{Coarse-grained KMC of the $2\times\SI{0.1}{\milli\metre}$ sandwich heated over $10^6$\,s.
+    Left: profiles at four times with (circles) and without (crosses) the blocking factor, and the
+    error-function solutions (lines). Right: final atomistic (1\,s ramp) and coarse-grained ($10^6$\,s
+    ramp) profiles in the scaling variable, together with the error function.}
+  \label{fig:coarse}
+\end{figure}
+
 % ===============================================================
 \section{Au in Si by the kick-out mechanism (Problem 2.3)}\label{sec:kickout}
 % ===============================================================
@@ -375,12 +436,33 @@ equations of the same model are solved as an independent check.
 
 \subsection{Results: the ``weird'' profiles}\label{sec:koresults}
 
-After 1000\,s the substitutional gold profile (Part~II) is not an erfc decaying from the coated surface
+Each depth cell is $\SI{10}{\micro\metre}$ long with a cross-section of $(\SI{43}{\nano\metre})^2$, i.e.\
+$9.3\cdot10^{8}$ Si sites; the interstitial gold hops between cells at $\SI{10}{\per\second}$, lives $1/k_f = \SI{1.67}{\milli\second}$ before a kick-out and travels
+$\sqrt{D/k_f} = \SI{1.29}{\micro\metre}$ in that time. One run executes $4\cdot10^{8}$ events in about
+$\SI{90}{\second}$. \Cref{fig:kickout} shows the three species at 10, 100, 300 and 1000\,s.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_04.pdf}
+  \caption{Au in a 1\,mm Si wafer at 1050\,\textdegree C, gold source at $x = 0$. Left: substitutional
+    gold, KMC (markers) and rate equations (lines), logarithmic scale. Centre: self-interstitials.
+    Right: interstitial gold. All concentrations are normalized to their equilibrium values.}
+  \label{fig:kickout}
+\end{figure}
+
+After 1000\,s the substitutional gold profile is not an erfc decaying from the coated surface
 but U-shaped. $C_s/C_s^{\mathrm{eq}}$ is $0.47$ in the first cell, falls to a minimum of $0.013$ at a
 depth of $\SI{0.7}{\milli\metre}$, and rises again to $0.13$ at the uncoated back surface, which has no
 gold source. The self-interstitials show the inverse shape, a broad maximum of up to about $30\,C_I^{\mathrm{eq}}$
 in the bulk, and the interstitial gold decreases only gradually through the wafer.
-The KMC and the rate equations agree within the noise of the KMC. The explanation:
+The KMC and the rate equations agree within the noise of the KMC: averaged over the first five cells
+they give $0.229$ and $0.231$, over the last five cells $0.0638$ and $0.0637$, and in the middle of the
+wafer, where only few gold atoms are incorporated, $0.013$ and $0.016$. At mid-wafer the local
+equilibrium of \cref{eq:localeq}, $C_i/C_i^{\mathrm{eq}} = (C_s/C_s^{\mathrm{eq}})(C_I/C_I^{\mathrm{eq}})$,
+holds exactly ($0.472$ on both sides). The time series shows how the U forms: at 10 and 100\,s the gold is
+incorporated only in the front part of the wafer, by 300\,s a second rise has appeared at the back
+surface, and the profile then fills in from both sides while the self-interstitial maximum in the bulk flattens from
+about $50$ to $30\,C_I^{\mathrm{eq}}$. The explanation:
 \begin{enumerate}\setlength{\itemsep}{2pt}
   \item Interstitial gold is mobile and penetrates the whole wafer within the annealing time
     ($\sqrt{Dt} = \SI{1}{\milli\metre}$), but it is rare: its solubility is only $1.7\,\%$ of that of

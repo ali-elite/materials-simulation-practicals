@@ -139,9 +139,10 @@
   energy response to a step strain oscillates with a period of $\SI{10}{\femto\second}$, and that the
   tensile response becomes rate-dependent above a critical deformation rate of about
   $10^{12}\,\mathrm{s^{-1}}$. An NVT tension test at 300\,K fails at a smaller strain than the 0\,K NVE
-  test, because thermal fluctuations assist the bond-breaking event, and only the thermostatted run
-  removes the deformation work so that the fracture does not melt the tube. The implementation is in
-  Part~II.
+  test, because thermal fluctuations assist the bond-breaking event. In both ensembles the energy
+  released at fracture heats the tube to several thousand kelvin; only the thermostatted run then
+  drains it again. The code is the Jupyter notebook of Part~II; all its figures and results are
+  included in this report.
 
 \tableofcontents
 \clearpage
@@ -175,7 +176,8 @@ notebook of Part~II.
 \begin{table}[ht]
   \centering
   \caption{Correspondence between the tasks of the tutorial script and this report. Implementation
-    tasks are carried out in the Jupyter notebook \texttt{atomistic.ipynb} of Part~II.}
+    tasks are carried out in the Jupyter notebook \texttt{atomistic.ipynb} of Part~II; their figures and
+    results are presented in the sections given.}
   \label{tab:taskmap}
   \begin{tabularx}{\linewidth}{lXl}
     \toprule
@@ -482,7 +484,8 @@ parabola $W = p_0 + p_1 l + p_2 l^2$ fitted, whose minimum lies at
   \qquad
   W_0 = p_0 - \frac{p_1^2}{4p_2}.
 \end{equation}
-\Cref{tab:lattice} collects the results of Part~II. EMT places fcc lowest, bcc
+\Cref{fig:lattice-scan} shows the energy scans and \cref{tab:lattice} collects the results. EMT places
+fcc lowest, bcc
 $\SI{0.037}{\electronvolt\per atom}$ above it and simple cubic a further
 $\SI{0.42}{\electronvolt\per atom}$ higher --- the correct ordering, and the correct ground-state
 structure for copper. Physically this reflects the many-body term of \cref{eq:emt}: the close-packed
@@ -522,7 +525,21 @@ flattening under tension (the tail of the cohesive well). Fitted over the whole 
 parabola is pulled towards larger $l$, giving $\SI{3.650}{\angstrom}$ instead of
 $\SI{3.593}{\angstrom}$ --- an error of $1.6\,\%$, three times the error of the potential itself.
 Restricting the fit to $\pm\SI{0.25}{\angstrom}$ around the minimum, or using a Birch--Murnaghan
-equation of state, removes the bias. The same anharmonicity is the subject of Task~3.6
+equation of state, removes the bias. \Cref{fig:lattice-scan} shows both effects: in the left panel the
+parabolas fitted over the full range (lines) miss the scanned energies (dots) on the compressed side and
+place their minima to the right of the true minima (stars); in the right panel a parabola fitted over a
+narrow range around the fcc minimum follows the data and gives the EMT minimum at
+$\SI{3.593}{\angstrom}$, just below the experimental value.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_01.pdf}
+  \caption{Molecular statics of copper with EMT. Left: energy per atom against the lattice constant for
+    simple cubic, bcc and fcc (dots), second-order fits over the whole scan range (lines) and the true
+    minima (stars). Right: the fcc scan near the minimum with a parabola fitted over a narrow range, the
+    EMT minimum and the experimental lattice constant.}
+  \label{fig:lattice-scan}
+\end{figure} The same anharmonicity is the subject of Task~3.6
 (\cref{sec:quadratic}), and it is the reason the elastic constants below are extracted from a narrow
 strain window with a third-order rather than a second-order fit.
 
@@ -664,7 +681,24 @@ within $10^{-6}$, which confirms that the deformations start from the true energ
   \end{tabular}
 \end{table}
 
-\Cref{tab:elastic} gives the result. Three observations.
+\Cref{fig:strainenergy} shows the strain energy density of the relaxed four-atom cell for the four
+strain states over $\pm2\,\%$. All four curves are parabolas centred at zero strain; the fitted minima
+lie at $|\epsb_{\min}| \le 2\times10^{-6}$, confirming that the reference cell is relaxed (residual
+force $7\times10^{-17}\,\mathrm{eV/\AA}$). Their curvatures are $\SI{172.98}{\giga\pascal}$ (uniaxial),
+$\SI{578.51}{\giga\pascal}$ (biaxial), $\SI{1215.44}{\giga\pascal}$ (hydrostatic) and
+$\SI{89.85}{\giga\pascal}$ (shear). The hydrostatic curvature is an independent check: it should equal
+$3(C_{11} + 2C_{12}) = \SI{1216.57}{\giga\pascal}$, and it does to within $0.1\,\%$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.6\linewidth]{figures/fig_02.pdf}
+  \caption{Strain energy density of fcc copper (EMT) for the uniaxial, biaxial, hydrostatic and shear
+    strain states as a function of the strain parameter $\epsb$ (markers: calculations, lines: guide to
+    the eye).}
+  \label{fig:strainenergy}
+\end{figure}
+
+\Cref{tab:elastic} gives the elastic constants. Three observations.
 
 First, the errors are not random but ordered: $C_{11}$ and the bulk modulus, which are directly tied to
 the quantities EMT was fitted to, come out within a few percent, whereas $C_{12}$ and especially
@@ -691,8 +725,9 @@ which was fitted, while the error lives in the deviatoric combination $C_{11}-C_
 \end{task}
 
 The whole construction of \cref{sec:elastic} rests on $\We = \tfrac12 C\epsb^2$, which is the second
-order term of a Taylor expansion about the relaxed state. Part~II measures the departure from it by
-comparing the computed energy with the parabola built from the constants of \cref{tab:elastic}:
+order term of a Taylor expansion about the relaxed state. We measure the departure from it by
+comparing the computed energy with the parabola built from the constants of \cref{tab:elastic} over
+$\pm18\,\%$ strain (\cref{fig:quadratic}):
 \begin{equation}\label{eq:validity}
   \frac{\left|\We(\epsb) - \tfrac12 C\epsb^2\right|}{\tfrac12 C\epsb^2} < 5\,\%
   \qquad\Longrightarrow\qquad
@@ -714,11 +749,23 @@ the second-order fit of the lattice constant in \cref{sec:statics}.
 \paragraph{Shear stays quadratic much longer.}
 For a shear of a cubic crystal $\We(\epsb) = \We(-\epsb)$ by symmetry --- shearing the $2$--$3$ plane in
 one direction is crystallographically equivalent to shearing it in the other --- so all odd terms of
-the expansion vanish identically and the first correction is quartic. This is visible both in the plot
-of Part~II and in the fitted $\epsb_{\min} \approx 10^{-14}$ for the shear state.
+the expansion vanish identically and the first correction is quartic. This is visible both in
+\cref{fig:quadratic}, where the shear curve is symmetric and its deviation stays below $5\,\%$ up to
+$|\epsb| = 14.5\,\%$, and in the fitted $\epsb_{\min} \approx 10^{-14}$ for the shear state. The uniaxial
+curve, in contrast, lies above the parabola in compression and below it in tension, and its deviation
+exceeds $20\,\%$ at the ends of the range.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_03.pdf}
+  \caption{Validity of the quadratic energy--strain law. Left: strain energy density from EMT (solid)
+    and the quadratic approximation $\tfrac12C\epsb^2$ with the fitted constants (dashed) for uniaxial
+    and shear strain. Right: relative deviation of the two; the dotted line marks $5\,\%$.}
+  \label{fig:quadratic}
+\end{figure}
 
 \paragraph{Choice of the strain window.}
-A window of $\pm2\,\%$, used throughout Part~II, is therefore a compromise: wide enough that the energy
+A window of $\pm2\,\%$, used for all elastic constants, is therefore a compromise: wide enough that the energy
 differences are large against the numerical noise of the calculator ($\sim10^{-8}$ eV), narrow enough
 that the cubic correction is a small perturbation. A real material fails long before leaving this
 window --- copper yields at an elastic strain of a few tenths of a percent --- so linear elasticity is
@@ -755,7 +802,28 @@ Three families follow from the value of $\theta$: \emph{armchair} tubes with $m 
 ($\theta = 30^\circ$), \emph{zigzag} tubes with $m = 0$ ($\theta = 0^\circ$), and \emph{chiral} tubes
 otherwise. The electronic structure follows a simple rule: the tube is metallic if $n-m$ is divisible
 by three and semiconducting otherwise, so all armchair tubes are metals. The $(5,5)$ tube used here has
-$d = \SI{6.78}{\angstrom}$, $\theta = 30^\circ$ and is metallic.
+$d = \SI{6.78}{\angstrom}$, $\theta = 30^\circ$ and is metallic. \Cref{tab:chirality} applies these
+formulas to a few tubes. The simulated $(5,5)$ tube has 200 atoms and a length of
+$L_0 = \SI{24.595}{\angstrom}$; after relaxation its radius is $\SI{3.436}{\angstrom}$ (analytic
+$\SI{3.390}{\angstrom}$) and its cohesive energy $\SI{-7.245}{\electronvolt\per atom}$.
+
+\begin{table}[ht]
+  \centering
+  \caption{Diameter, chiral angle, type and electronic character of several nanotubes.}
+  \label{tab:chirality}
+  \begin{tabular}{crrll}
+    \toprule
+    $(n,m)$ & $d$ [\AA] & $\theta$ [$^\circ$] & Type & Electronic \\
+    \midrule
+    $(5,5)$   &  6.780 & 30.00 & armchair & metallic \\
+    $(10,10)$ & 13.560 & 30.00 & armchair & metallic \\
+    $(9,0)$   &  7.046 &  0.00 & zigzag   & metallic \\
+    $(10,0)$  &  7.829 &  0.00 & zigzag   & semiconducting \\
+    $(8,4)$   &  8.285 & 19.11 & chiral   & semiconducting \\
+    $(7,3)$   &  6.958 & 17.00 & chiral   & semiconducting \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \paragraph{Mechanical behaviour from the structure.}
 The bonds are not isotropically distributed, and the pattern tells us what to expect.
@@ -788,14 +856,49 @@ five times that of steel at one fifth of the density.
 \paragraph{The time step.}
 Velocity-Verlet is a symplectic integrator: it conserves a shadow Hamiltonian and therefore shows no
 secular energy drift, \emph{provided} the time step resolves the fastest oscillation present. For
-carbon that is the C--C stretching mode. Part~II measures the drift of an unforced NVE run at fixed
-strain and finds it below $\SI{0.01}{\milli\electronvolt\per atom}$ over $\SI{400}{\femto\second}$ for
-$\Delta t \le \SI{1}{\femto\second}$, rising by more than an order of magnitude at
-$\Delta t = \SI{4}{\femto\second}$. All production runs use $\Delta t = \SI{0.5}{\femto\second}$.
+carbon that is the C--C stretching mode. We measure the drift and the spread of the total energy of an
+unforced NVE run at fixed strain over $\SI{400}{\femto\second}$ (\cref{tab:timestep}). Both stay below
+$\SI{0.01}{\milli\electronvolt\per atom}$ for $\Delta t \le \SI{1}{\femto\second}$; at
+$\Delta t = \SI{2}{\femto\second}$ the spread grows to $\SI{0.036}{\milli\electronvolt\per atom}$, and at
+$\SI{4}{\femto\second}$ drift and spread exceed $\SI{0.1}{\milli\electronvolt\per atom}$. All production
+runs use $\Delta t = \SI{0.5}{\femto\second}$.
+
+\begin{table}[ht]
+  \centering
+  \caption{Drift and spread of the total energy of an unforced NVE run of the $(5,5)$ tube over
+    $\SI{400}{\femto\second}$ for different time steps.}
+  \label{tab:timestep}
+  \begin{tabular}{rrr}
+    \toprule
+    $\Delta t$ [fs] & drift [meV/atom] & spread [meV/atom] \\
+    \midrule
+    0.10 &  0.000 & 0.000 \\
+    0.25 & $-0.000$ & 0.001 \\
+    0.50 & $-0.002$ & 0.002 \\
+    1.00 & $-0.009$ & 0.009 \\
+    2.00 & $-0.001$ & 0.036 \\
+    4.00 & $-0.119$ & 0.143 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \paragraph{The relaxation time.}
-After a $1\,\%$ step strain the potential energy of the tube oscillates with a dominant frequency of
-$\SI{100}{\tera\hertz}$, i.e. a period of $\tau = \SI{10}{\femto\second}$. Since the energy is
+After a $1\,\%$ step strain the potential and kinetic energies of the tube oscillate in antiphase with
+an amplitude of about $\SI{0.25}{\milli\electronvolt\per atom}$ (\cref{fig:stepstrain}). The spectrum
+of the potential energy has its dominant peak at $\SI{100}{\tera\hertz}$, i.e. a period of
+$\tau = \SI{10}{\femto\second}$, and a weaker one near $\SI{20}{\tera\hertz}$ from slower, collective
+deformation modes of the tube.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_04.pdf}
+  \caption{Response of the $(5,5)$ tube to a $1\,\%$ step strain in NVE. Left: potential and kinetic
+    energy against time. Right: amplitude spectrum of the potential energy, with the dominant peak at
+    $\SI{100}{\tera\hertz}$.}
+  \label{fig:stepstrain}
+\end{figure}
+
+ Since the energy is
 quadratic in the displacement, the underlying displacement mode is at half that frequency,
 $\SI{50}{\tera\hertz}$, which is the C--C stretching mode --- the graphite $G$ band lies at
 $1580\,\mathrm{cm^{-1}} \approx \SI{47}{\tera\hertz}$, so the Brenner potential reproduces it well. The
@@ -819,7 +922,7 @@ which gives
   \approx \frac{0.1}{\SI{10}{\femto\second}} = 10^{13}\,\mathrm{s^{-1}}
 \end{equation}
 as an upper bound, reduced by one to two orders of magnitude because the energy must be redistributed
-over several periods. \Cref{tab:rates} gives the measurement of Part~II: up to
+over several periods. \Cref{tab:rates} and \cref{fig:rates} give the measurement: up to
 $2\cdot10^{11}\,\mathrm{s^{-1}}$ the dynamic energy--strain curves lie on the quasi-static path to
 within $\SI{0.04}{\milli\electronvolt\per atom}$ and the failure strain is rate independent, whereas
 above $\sim10^{12}\,\mathrm{s^{-1}}$ the deviation grows by two orders of magnitude and the apparent
@@ -827,11 +930,25 @@ failure strain rises from $0.41$ to $0.50$. The critical rate is therefore
 $\dot\varepsilon_{\mathrm{crit}} \approx 10^{12}\,\mathrm{s^{-1}}$, consistent with
 \cref{eq:ratecrit}. Above it the tube is pulled through the instability before the atoms can rearrange
 into the broken-bond configuration, so failure is artificially \emph{delayed} and the stored energy at
-failure is too high.
+failure is too high. In the left panel of \cref{fig:rates} all dynamic curves follow the quasi-static
+path up to $\varepsilon \approx 0.3$; the relaxed quasi-static path breaks at $0.33$, the slowest
+dynamic runs at $0.41$--$0.43$, and the peaks move to larger strains and energies as the rate increases.
+At $6\cdot10^{12}\,\mathrm{s^{-1}}$ no failure occurs at all before the end of the loading at
+$\varepsilon = 0.5$, so the value $0.498$ in \cref{tab:rates} is only a lower bound. The right panel
+shows the failure strain against the rate.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_05.pdf}
+  \caption{Tensile loading of the $(5,5)$ tube in NVE at six deformation rates. Left: potential energy
+    increase along the loading path, with the relaxed quasi-static path (dashed). Right: strain at the
+    energy maximum against the deformation rate; the dashed line is the quasi-static instability.}
+  \label{fig:rates}
+\end{figure}
 
 \begin{table}[ht]
   \centering
-  \caption{Rate dependence of the tensile failure of the $(5,5)$ tube in NVE at 0\,K (Part~II). The
+  \caption{Rate dependence of the tensile failure of the $(5,5)$ tube in NVE at 0\,K. The
     last column is the maximum deviation of the dynamic energy from the quasi-static path for
     $\varepsilon < 0.3$.}
   \label{tab:rates}
@@ -876,7 +993,16 @@ extra, because the total number of MD steps at a given rate is the same either w
   What happens to the kinetic, potential and total energy at large deformations?
 \end{task}
 
-Three regimes are visible in the plots of Part~II.
+\Cref{fig:nve} shows the energies and the temperature of an NVE run at
+$\dot\varepsilon = 2\times10^{11}\,\mathrm{s^{-1}}$. Three regimes are visible.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_06.pdf}
+  \caption{NVE tension test of the $(5,5)$ tube at $\dot\varepsilon = 2\times10^{11}\,\mathrm{s^{-1}}$.
+    Left: change of the potential, kinetic and total energy of the 200-atom tube. Right: temperature.}
+  \label{fig:nve}
+\end{figure}
 
 \begin{enumerate}\setlength{\itemsep}{3pt}
   \item \textbf{Elastic and anharmonic loading.} Essentially all the external work goes into potential
@@ -887,7 +1013,9 @@ Three regimes are visible in the plots of Part~II.
   \item \textbf{Failure.} The first bonds break. The potential energy drops sharply and, because the
     simulation is NVE, the released energy has nowhere to go but into kinetic energy: $E_{\mathrm{kin}}$
     jumps from $\SI{2.5}{\electronvolt}$ to $\SI{169}{\electronvolt}$ and the temperature spikes from
-    $\SI{97}{\kelvin}$ to over $\SI{6500}{\kelvin}$. The fracture site effectively melts.
+    $\SI{97}{\kelvin}$ to over $\SI{6500}{\kelvin}$ (peak about $\SI{7500}{\kelvin}$). The fracture
+    site effectively melts. The stored energy at failure is $\SI{509}{\electronvolt}$ for the whole
+    tube.
   \item \textbf{The total energy increases monotonically.} This is \emph{not} an integrator drift ---
     \cref{sec:rate} established that the drift is below
     $\SI{0.01}{\milli\electronvolt\per atom}$. It is the external work done by the moving cell
@@ -903,7 +1031,17 @@ Three regimes are visible in the plots of Part~II.
   Compare the energies of the two systems. What can be observed?
 \end{task}
 
-Coupling the tube to a Langevin heat bath changes the picture in three ways.
+Coupling the tube to a Langevin heat bath (friction $0.01\,\mathrm{fs^{-1}}$) and loading it at the
+same rate as the NVE reference changes the picture in three ways (\cref{fig:nvt}).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_07.pdf}
+  \caption{Tension tests of the $(5,5)$ tube in NVE at 0\,K and in NVT at 300\,K at the same
+    deformation rate. Left: potential energy per atom. Centre: temperature (logarithmic). Right: total
+    energy per atom.}
+  \label{fig:nvt}
+\end{figure}
 
 \begin{enumerate}\setlength{\itemsep}{3pt}
   \item \textbf{The thermostatted tube fails earlier}, at $\varepsilon = 0.408$ against $0.430$ in NVE
@@ -913,15 +1051,21 @@ Coupling the tube to a Langevin heat bath changes the picture in three ways.
     supplies part of the barrier. This is the atomistic version of the familiar statement that strength
     decreases with temperature.
   \item \textbf{Less energy is stored at failure}, $\SI{2.26}{\electronvolt\per atom}$ against
-    $\SI{2.54}{\electronvolt\per atom}$, for the same reason; and the energy--strain curve is offset by
-    the thermal energy $\tfrac32\kB T \approx \SI{39}{\milli\electronvolt\per atom}$ and is visibly
-    noisier.
-  \item \textbf{The total energy behaves completely differently.} In NVE it can only grow, because the
-    deformation work has nowhere to go; in NVT the thermostat removes that work continuously, the total
-    energy stays flat during loading and does not spike at fracture. Physically, the NVT run describes
-    an isothermal specimen in contact with its surroundings --- a room-temperature tensile test ---
-    whereas the NVE run describes a perfectly insulated, adiabatic one in which the fracture heat
-    cannot escape and melts the specimen.
+    $\SI{2.54}{\electronvolt\per atom}$, for the same reason; and the potential energy curve lies
+    slightly above the NVE curve, offset by the thermal energy of order
+    $\tfrac32\kB T \approx \SI{39}{\milli\electronvolt\per atom}$. The temperature of the
+    thermostatted tube fluctuates between about 150 and $\SI{350}{\kelvin}$ before failure (mean
+    $\SI{240}{\kelvin}$, so the 200-atom tube does not fully reach the bath temperature within the short
+    run), whereas the NVE tube stays below $\SI{10}{\kelvin}$.
+  \item \textbf{The total energy behaves differently after failure.} During loading the deformation work
+    is stored as potential energy, which the thermostat cannot remove, so the total energy rises in both
+    ensembles in the same way. At fracture the released energy heats both tubes to several thousand
+    kelvin. In NVE the total energy then keeps rising, because the cell still does work and nothing
+    leaves the system; in NVT the thermostat drains the heat and the total energy falls, from
+    $\SI{2.4}{}$ to $\SI{1.9}{\electronvolt\per atom}$ over the rest of the run. The drain is slow at this
+    friction, so the temperature remains high until the end of the loading. Physically, the NVT run
+    describes a specimen in contact with its surroundings --- a room-temperature tensile test --- whereas
+    the NVE run describes a perfectly insulated one in which the fracture heat cannot escape.
 \end{enumerate}
 
 \subsection{Bond-breaking energy and the stress--strain curve (Task 4.5)}\label{sec:bond}
@@ -950,24 +1094,55 @@ $t = \SI{3.4}{\angstrom}$, so that
 \end{equation}
 Every reported modulus and strength of a nanotube depends on this choice, which is why the literature
 also quotes the thickness-independent \emph{surface} modulus $Et$ in $\si{\giga\pascal\nano\metre}$.
-The numerical values are given in Part~II.
+With $R = \SI{3.436}{\angstrom}$ the wall volume is $V_0 = \SI{1805.4}{\angstrom\cubed}$
+($\SI{9.03}{\angstrom\cubed}$ per atom).
+
+\Cref{fig:stressstrain} shows the quasi-static energy and the stress obtained from it. A dedicated fine
+scan over $\pm2\,\%$ gives Young's modulus $E = \SI{907}{\giga\pascal}$, or a surface modulus of
+$\SI{309}{\giga\pascal\nano\metre}$, against about $\SI{1000}{\giga\pascal}$ and
+$\SI{340}{\giga\pascal\nano\metre}$ from experiment and DFT. The stress--strain curve softens with
+strain: the stress reaches about $\SI{100}{\giga\pascal}$ at $\varepsilon = 0.25$ and about
+$\SI{140}{\giga\pascal}$ just before the energy maximum at $\varepsilon = 0.33$, where the relaxed tube
+becomes unstable. Beyond that point the relaxed structures are partially broken, the energy jumps from
+one configuration to another, and the numerically differentiated stress oscillates between large
+positive and negative values. The largest of these values, $\SI{313}{\giga\pascal}$ at
+$\varepsilon = 0.37$, is an artefact of differentiating a discontinuous curve and not a tensile
+strength; the meaningful strength is the stress at the instability.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_08.pdf}
+  \caption{Quasi-static tension of the $(5,5)$ tube. Left: energy of the relaxed tube against strain;
+    the dotted line marks the instability at $\varepsilon = 0.33$. Right: stress from the derivative of
+    the energy, with the tangent at $\varepsilon = 0$ that defines Young's modulus. Beyond the
+    instability the curve is not a material response (see text).}
+  \label{fig:stressstrain}
+\end{figure}
 
 \paragraph{Bond-breaking energy.}
-Part~II reports three complementary measures, because ``the'' bond-breaking energy is not a single
+We compute three complementary measures, because ``the'' bond-breaking energy is not a single
 number.
 \begin{enumerate}\setlength{\itemsep}{2pt}
-  \item \emph{From cohesion.} The relaxed tube has $\SI{-7.245}{\electronvolt\per atom}$ and
-    $3/2$ bonds per atom, so one C--C bond is worth about $\SI{4.8}{\electronvolt}$ --- in good
+  \item \emph{From cohesion.} The relaxed tube has 300 bonds among 200 atoms (three per atom, as
+    expected for sp$^2$ carbon), a cohesive energy of $\SI{-7.245}{\electronvolt\per atom}$ and
+    $3/2$ bonds per atom, so one C--C bond is worth $\SI{4.83}{\electronvolt}$ --- in good
     agreement with the sp$^2$ bond energy of graphene ($\approx\SI{4.9}{\electronvolt}$), which is what
     the Brenner potential was fitted to reproduce.
-  \item \emph{From fracture.} Relaxing the broken tube and comparing it with the intact one gives the
-    energy actually spent on creating the two new ends, and dividing by the number of bonds that were
-    lost gives the energy per broken bond. It is smaller than the cohesive estimate, because the atoms
-    at the new edge rebond and partially recover their energy --- the same many-body effect that makes
-    the vacancy formation energy smaller than the cohesive energy in \cref{sec:pairfail}.
-  \item \emph{As a fracture energy.} Dividing the same quantity by twice the cross-sectional area
-    $2\pi Rt$ gives a surface energy $\gamma$ that can be compared with the cleavage energy of graphite.
+  \item \emph{From fracture.} The tube is loaded to $\varepsilon = 0.5$, unloaded and relaxed. It then
+    has 267 bonds (33 lost) and lies $\SI{248.9}{\electronvolt}$ above the intact tube, i.e.\
+    $\SI{7.54}{\electronvolt}$ per lost bond. This is \emph{larger} than the cohesive estimate. The
+    energy difference contains more than the broken bonds: the broken tube keeps residual strain and
+    distorted, partly reconstructed edges that the short relaxation does not remove, and counting bonds
+    with a fixed cut-off of $\SI{1.85}{\angstrom}$ is a crude measure near a heavily distorted edge.
+    The value is therefore an upper bound.
+  \item \emph{As a fracture energy.} Dividing the same energy by twice the cross-sectional area
+    $2\pi Rt$ gives $2\gamma = \SI{3.39}{\electronvolt\per\angstrom\squared}$, i.e.\
+    $\gamma = \SI{27.2}{\joule\per\metre\squared}$. In-plane fracture of graphene costs about
+    $5$--$\SI{6}{\joule\per\metre\squared}$ per new surface, so this is again an upper bound, for the
+    same reasons.
 \end{enumerate}
+Finally, the energy released dynamically at the moment of fracture, $\SI{127.4}{\electronvolt}$,
+appears as kinetic energy; it is the temperature spike of \cref{fig:nve}.
 
 \paragraph{A caveat on the first-generation Brenner potential.}
 The failure strains reported in \cref{tab:rates} ($0.33$ quasi-statically, $0.41$--$0.50$ dynamically)
@@ -1013,8 +1188,8 @@ makes laboratory time scales unreachable. The second is the deformation rate: be
 $10^{11}\,\mathrm{s^{-1}}$ the tube follows the quasi-static path, above about
 $10^{12}\,\mathrm{s^{-1}}$ it does not and the failure strain becomes an artefact of the loading rate.
 Within those limits the physics is sensible --- thermal fluctuations lower the failure strain from
-$0.43$ at 0\,K to $0.41$ at 300\,K, and in NVE the bond-breaking energy is released as heat that raises
-the local temperature above $\SI{6000}{\kelvin}$, whereas in NVT the thermostat carries it away. The
+$0.43$ at 0\,K to $0.41$ at 300\,K, and the bond-breaking energy is released as heat that raises the
+temperature above $\SI{6000}{\kelvin}$, which in NVT the thermostat slowly carries away. The
 absolute failure strains and strengths, however, are inflated by the cut-off artefact of the
 first-generation Brenner potential, which is a reminder that the most important step of an atomistic
 simulation is the one taken before any atom is moved: choosing, and verifying, the potential.

@@ -152,8 +152,10 @@
   tridiagonal and irreducibly diagonally dominant; it is a nonsingular M-matrix whose
   only asymmetry stems from the Neumann rows and is removed by a diagonal scaling. These
   properties guarantee a unique discrete solution that is non-negative for physically
-  admissible data and depends monotonically on them, and they prepare the implementation
-  reported in Part~II.
+  admissible data and depends monotonically on them. A Python implementation (Part~II) reproduces
+  uniform and linear solutions to round-off, shows that one normalized simulation covers all pairs
+  of boundary concentrations, and converges with second order; only next to the corners, where the
+  Dirichlet and Neumann conditions are incompatible, the maximum error converges with first order.
 
 \tableofcontents
 \clearpage
@@ -182,7 +184,8 @@ boundary conditions (\cref{sec:bc}) and assemble and analyse the resulting linea
 (\cref{sec:system}). Stationary heat conduction obeys an equation of identical structure,
 with temperature in place of concentration and the thermal conductivity tensor in place of
 $\bD$, so all results apply to it as well. The numerical implementation and its
-verification (Task~5) form Part~II and are provided as a Jupyter notebook. Each task of
+verification (Task~5) are presented in \cref{sec:task5}; the code that produces all figures and
+tables of that section is provided as the Jupyter notebook of Part~II. Each task of
 the script is restated, in paraphrased form, in a shaded box at the beginning of the
 section that answers it, and \cref{tab:taskmap} gives an overview.
 
@@ -203,6 +206,8 @@ section that answers it, and \cref{tab:taskmap} gives an overview.
     3.2 & Neumann boundary conditions & \ref{sec:neumann} \\
     4.1 & Assembly of the linear system & \ref{sec:assembly} \\
     4.2 & Properties of the coefficient matrix & \ref{sec:properties} \\
+    5.1 & Implementation of the solver & \ref{sec:implementation} \\
+    5.2 & Test problems 1--7 & \ref{sec:test12}--\ref{sec:test7} \\
     \bottomrule
   \end{tabularx}
 \end{table}
@@ -553,7 +558,7 @@ the mesh cells. The five-point stencil is shown in \cref{fig:stencil}.
   on the boundary, exactly as for harmonic functions. Moreover, the truncation
   error~\eqref{eq:truncation} vanishes for polynomials of degree at most three in each
   variable, so that linear concentration profiles, as expected in the test problems of
-  Part~II, are reproduced exactly up to round-off.
+  \cref{sec:task5}, are reproduced exactly up to round-off.
 \end{remark}
 
 \subsection{Node numbering (Task 2.2a)}\label{sec:numbering}
@@ -1078,6 +1083,320 @@ iterative solvers, and round-off errors are amplified more strongly.
 \end{itemize}
 
 % ===============================================================
+\section{Implementation and verification (Task 5)}\label{sec:task5}
+% ===============================================================
+
+\begin{task}{5.1}
+  Implement the solution for a domain of given width $l_x$ and height $l_y$, given numbers of
+  nodes $N_x$ and $N_y$ and arbitrary boundary values of $\bar j$ and $\bar\rho$. Assemble the
+  matrix first without boundary conditions and modify the affected rows in a second step.
+\end{task}
+
+\begin{task}{5.2}
+  Solve a series of test problems: a uniform and a linear concentration; several pairs of
+  boundary concentrations, and how a single simulation can describe all of them; a coarse grid
+  against the analytical solution, and where and why they differ most; the effect of mesh
+  refinement, shown in a convergence plot; a faster solution for zero lateral flux; and the
+  solution for different boundary conditions, with an explanation of the behaviour near the
+  boundaries.
+\end{task}
+
+The solver is implemented in Python (NumPy, SciPy) in the notebook of Part~II. All quantities are in
+SI units. Unless stated otherwise the medium is isotropic ($P = 1$), the domain is a square of side
+$l = 1\,\mathrm{cm}$, $D = 10^{-9}\,\mathrm{m^2\,s^{-1}}$, and the reference flux
+$J = 2\times10^{-6}\,\mathrm{mol\,m^{-2}\,s^{-1}}$ produces concentration differences of order
+$Jl/D = 20\,\mathrm{mol\,m^{-3}}$. As in \cref{sec:neumann}, $\bar j = \bj\cdot\bn$ is the outward
+normal flux, so $\bar j < 0$ is an inflow.
+
+\subsection{Implementation (Task 5.1)}\label{sec:implementation}
+
+The Dirichlet rows are eliminated, so the unknowns are the $N_x(N_y-2)$ nodes between them,
+numbered row-wise from the top left as in \cref{sec:numbering}. In zero-based form the node in mesh
+row $r$ (counted from the top) and column $i'$ has the index $k' = rN_x + i'$, which is the row-major
+order of NumPy, so the solution vector reshapes directly into an $(N_y-2)\times N_x$ array. The
+matrix is assembled in the two steps suggested by the script.
+\begin{enumerate}\setlength{\itemsep}{2pt}
+  \item \emph{Stencil without boundary conditions.} The one-dimensional second-difference operators
+    $\bT_x = \operatorname{tridiag}(-1, 2, -1)$ of size $N_x$ and
+    $\bT_y = \lambda\operatorname{tridiag}(-1, 2, -1)$ of size $N_y - 2$, with
+    $\lambda = P h_x^2/h_y^2$, are combined in the Kronecker sum
+    $\bA = \bI\otimes\bT_x + \bT_y\otimes\bI$. It reproduces the five-point
+    stencil~\eqref{eq:stencil} with the diagonal $2(1+\lambda)$ and the block-tridiagonal
+    structure~\eqref{eq:block}, and it avoids any coupling between the last node of one mesh row
+    and the first node of the next.
+  \item \emph{Boundary rows.} For the Neumann conditions, eliminating the ghost nodes replaces $-1$
+    by $-2$ in the first and the last row of $\bT_x$ (\cref{sec:neumann}). The Dirichlet rows have
+    no entries in $\bT_y$, so the matrix needs no change; their values enter the right-hand side.
+\end{enumerate}
+The right-hand side contains $\lambda\bar\rho$ in the first and the last row of unknowns and the
+flux terms $2h_x\bar j/D$ in the first and the last column, as in \eqref{eq:system}. Boundary
+values can be scalars or node-wise arrays, so arbitrary boundary data are supported. The system is
+solved with a sparse direct solver.
+
+For the $5\times5$ mesh with $\lambda = 1$ the assembled matrix is identical to
+\eqref{eq:system-explicit}, scaling its Neumann rows by $1/2$ makes it symmetric, and all its
+eigenvalues are real and positive, as shown in \cref{sec:properties}. \Cref{fig:sparsity} shows
+its sparsity pattern together with that of a $9\times9$ mesh: five diagonals, of which the outer
+two are separated from the main diagonal by $N_x$ positions, form the block-tridiagonal structure.
+The number of non-zeros grows only linearly with the number of unknowns.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.85\linewidth]{figures/fig_01.pdf}
+  \caption{Sparsity pattern of the coefficient matrix $\bA$ for a $5\times5$ mesh (15 unknowns,
+    left) and a $9\times9$ mesh (63 unknowns, right). Each marker is a non-zero entry.}
+  \label{fig:sparsity}
+\end{figure}
+
+\subsection{Uniform and linear concentration (Tests 1 and 2)}\label{sec:test12}
+
+In Test~1 both lateral fluxes are zero and $\rhoUpper = \rhoLower = 100\,\mathrm{mol\,m^{-3}}$. (The
+script leaves the flux value blank; zero flux is the only choice for which the concentration is
+constant.) The computed concentration equals $100\,\mathrm{mol\,m^{-3}}$ at every node to within
+$4.5\times10^{-13}\,\mathrm{mol\,m^{-3}}$ (\cref{fig:test1}). A constant satisfies the Laplace
+equation, both Dirichlet conditions and the zero-flux conditions, and the solution is unique
+(\cref{sec:properties}), so this is the exact solution; the scheme reproduces it exactly because
+every row of the stencil sums to zero.
+
+In Test~2, $\rhoUpper = 100$ and $\rhoLower = 50\,\mathrm{mol\,m^{-3}}$ with zero flux, and the
+exact solution is $\rho(y) = \rhoLower + (\rhoUpper - \rhoLower)\,y/l_y$. \Cref{fig:test2} shows that
+the computed profile is linear and identical in every column: the isolines are horizontal and meet
+the zero-flux boundaries at right angles, and the flux lines (white) run straight from the upper to
+the lower boundary. The maximum deviation from the exact solution is
+$3.6\times10^{-13}\,\mathrm{mol\,m^{-3}}$. The scheme is exact here because its truncation
+error~\eqref{eq:truncation} vanishes for polynomials of degree at most three
+(\cref{rem:meanvalue}) and the ghost-node condition is exact for $\partial_x\rho = 0$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.48\linewidth]{figures/fig_02.pdf}
+  \caption{Test~1: computed concentration for $\rhoUpper = \rhoLower = 100\,\mathrm{mol\,m^{-3}}$
+    and zero lateral flux on a $21\times21$ mesh. The field is uniform; the colour scale spans
+    $\pm1\,\mathrm{mol\,m^{-3}}$ around the boundary value.}
+  \label{fig:test1}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_03.pdf}
+  \caption{Test~2: $\rhoUpper = 100$, $\rhoLower = 50\,\mathrm{mol\,m^{-3}}$ and zero lateral flux.
+    Left: concentration field with isolines (black) and flux lines (white). Right: computed
+    profiles $\rho(y)$ at three positions $x$ compared with the exact linear solution.}
+  \label{fig:test2}
+\end{figure}
+
+\subsection{Several pairs of boundary concentrations (Test 3)}\label{sec:test3}
+
+\Cref{fig:test3} (left) shows the profiles at $x = l/2$ for the pairs
+$\{\rhoUpper, \rhoLower\} = \{200, 100\}$, $\{50, 30\}$, $\{100, 50\}$ and
+$\{20, 150\}\,\mathrm{mol\,m^{-3}}$. Every pair gives a linear profile between its two boundary
+values. Because the problem is linear in the boundary data, the normalized concentration
+\begin{equation}\label{eq:theta}
+  \theta = \frac{\rho - \rhoLower}{\rhoUpper - \rhoLower}
+\end{equation}
+satisfies the same equation with $\theta = 1$ on the upper boundary, $\theta = 0$ on the lower
+boundary and zero flux, independently of the pair. \textbf{A single simulation of $\theta$ therefore
+describes the behaviour completely}: $\rho = \rhoLower + (\rhoUpper - \rhoLower)\,\theta$. The right
+panel of \cref{fig:test3} confirms this: all four profiles collapse onto one curve, and the notebook
+checks that every pair is reproduced from the single unit solution.
+
+With non-zero fluxes the same scaling turns the Neumann condition into
+$\partial\theta/\partial n = -\Pi$ with the dimensionless flux
+$\Pi = \bar j\,l_y/\bigl(D(\rhoUpper - \rhoLower)\bigr)$, so the normalized solution depends only on
+$\Pi_\mathrm{left}$, $\Pi_\mathrm{right}$, the aspect ratio and $P$. Equivalently, by superposition
+every data set is a linear combination of four unit solutions, one per boundary. Computationally, the
+coefficient matrix does not depend on the boundary values, so it is factorized once and each new data
+set costs only a forward and a backward substitution.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_04.pdf}
+  \caption{Test~3: four pairs of boundary concentrations with zero lateral flux. Left: profiles
+    $\rho(y)$ at $x = l/2$. Right: the same profiles in the normalized form~\eqref{eq:theta} collapse
+    onto one curve.}
+  \label{fig:test3}
+\end{figure}
+
+\subsection{Coarse grid against the analytical solution (Test 4)}\label{sec:test4}
+
+With zero flux the scheme is exact (Tests~1 to~3), so a meaningful comparison needs non-zero fluxes.
+We impose a through-flow, $\jleft = -J$ (inflow) and $\jright = +J$ (outflow), with
+$\rhoUpper = 100$ and $\rhoLower = 50\,\mathrm{mol\,m^{-3}}$. Writing
+$\rho = \rhoLower + (\rhoUpper - \rhoLower)\,y/l_y + u$, where $u$ is harmonic, vanishes on the upper
+and lower boundaries and carries the Neumann data, separation of variables with $k_n = n\pi/l_y$ and
+the sine series of $1$ on $(0, l_y)$ gives
+\begin{equation}\label{eq:analytical}
+  \rho(x,y) = \rhoLower + (\rhoUpper - \rhoLower)\frac{y}{l_y}
+  - \sum_{n\ \mathrm{odd}} \frac{4\sin(k_n y)}{n\pi\,D\,k_n\sinh(k_n l_x)}
+  \Bigl[\jright\cosh(k_n x) + \jleft\cosh\bigl(k_n(l_x - x)\bigr)\Bigr].
+\end{equation}
+Differentiation confirms $\partial_x\rho = -\jright/D$ at $x = l_x$ and $\partial_x\rho = \jleft/D$ at
+$x = 0$, as required by \eqref{eq:neumann}. The series is evaluated with $10^4$ terms; doubling the
+number of terms changes the result by less than $10^{-7}\,\mathrm{mol\,m^{-3}}$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_05.pdf}
+  \caption{Test~4: through-flow problem ($\jleft = -J$, $\jright = +J$). Left: nodal error
+    $\rho_\mathrm{FD} - \rho_\mathrm{exact}$ in $\mathrm{mol\,m^{-3}}$ on the $5\times5$ mesh.
+    Right: concentration along the inflow boundary $x = 0$ from \eqref{eq:analytical} and from three
+    meshes.}
+  \label{fig:test4}
+\end{figure}
+
+\Cref{fig:test4} (left) shows the nodal error on the $5\times5$ mesh. It vanishes on the Dirichlet
+rows, where the values are prescribed, and on the vertical symmetry line $x = l/2$, where the
+antisymmetric through-flow contributes nothing. It is largest, $0.63\,\mathrm{mol\,m^{-3}}$, at the
+Neumann nodes next to the corners (nodes 1, 5, 11 and 15 of \cref{sec:numbering}), where the coarse
+solution underestimates the rise of the concentration at the inflow boundary and its drop at the
+outflow boundary. The right panel shows how the boundary profile approaches the analytical curve as
+the mesh is refined.
+
+The reason is the incompatibility of the boundary conditions at the four corners. Along a Dirichlet
+edge the concentration is constant, so $\partial_x\rho = 0$ there, whereas the adjacent Neumann edge
+demands $\partial_x\rho = \mp\bar j/D \ne 0$. The exact solution resolves this conflict with a corner
+singularity of the form $r\ln r$, with $r$ the distance from the corner: the concentration gradient
+diverges logarithmically and the second derivatives like $1/r$. The truncation
+error~\eqref{eq:truncation} involves fourth derivatives and is therefore unbounded near the corners,
+and the steep boundary layer at the inflow and outflow edges cannot be represented by a few nodes.
+
+\subsection{Mesh refinement and convergence (Test 5)}\label{sec:test5}
+
+We refine square meshes from $5\times5$ to $257\times257$ nodes and measure the maximum and the
+root-mean-square nodal error for two problems: (a) the through-flow problem of Test~4, which contains
+the corner singularities, and (b) the smooth harmonic function
+$\rho = 75 + 25\cos(\pi x/l)\cosh(\pi y/l)/\cosh\pi$, which satisfies zero flux at $x = 0$ and
+$x = l$ and supplies non-uniform Dirichlet values. \Cref{tab:convergence} lists the errors and
+\cref{fig:convergence} plots them.
+
+\begin{table}[ht]
+  \centering
+  \caption{Test~5: nodal errors in $\mathrm{mol\,m^{-3}}$ under mesh refinement for the through-flow
+    problem (a) and the smooth problem (b), and the time of the sparse direct solve.}
+  \label{tab:convergence}
+  \begin{tabular}{rrrrrrr}
+    \toprule
+    $N$ & $h$ [mm] & (a) max & (a) rms & (b) max & (b) rms & solve [s] \\
+    \midrule
+      5 & 2.5000 & $6.28\times10^{-1}$ & $3.03\times10^{-1}$ & $4.30\times10^{-1}$ & $2.13\times10^{-1}$ & 0.0008 \\
+      9 & 1.2500 & $2.79\times10^{-1}$ & $9.07\times10^{-2}$ & $1.13\times10^{-1}$ & $5.68\times10^{-2}$ & 0.0005 \\
+     17 & 0.6250 & $1.35\times10^{-1}$ & $2.56\times10^{-2}$ & $2.90\times10^{-2}$ & $1.44\times10^{-2}$ & 0.0009 \\
+     33 & 0.3125 & $6.72\times10^{-2}$ & $6.99\times10^{-3}$ & $7.27\times10^{-3}$ & $3.62\times10^{-3}$ & 0.0016 \\
+     65 & 0.1562 & $3.35\times10^{-2}$ & $1.87\times10^{-3}$ & $1.82\times10^{-3}$ & $9.06\times10^{-4}$ & 0.0067 \\
+    129 & 0.0781 & $1.68\times10^{-2}$ & $4.94\times10^{-4}$ & $4.55\times10^{-4}$ & $2.27\times10^{-4}$ & 0.0276 \\
+    257 & 0.0391 & $8.38\times10^{-3}$ & $1.30\times10^{-4}$ & $1.14\times10^{-4}$ & $5.66\times10^{-5}$ & 0.1450 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.62\linewidth]{figures/fig_06.pdf}
+  \caption{Test~5: maximum and root-mean-square nodal error against the mesh spacing for the
+    through-flow problem (a) and the smooth problem (b), with reference slopes $h$ and $h^2$.}
+  \label{fig:convergence}
+\end{figure}
+
+Increasing the number of nodes reduces the error monotonically. For the smooth problem (b) both
+error norms decrease by a factor of four per halving of $h$, i.e.\ the scheme converges with second
+order, as predicted by the truncation error~\eqref{eq:truncation}; the observed orders are
+$1.93$--$2.00$. For the through-flow problem (a) the root-mean-square error also approaches second
+order (observed orders rise from $1.74$ to $1.93$, the deficit being a logarithmic factor from the
+singularity), whereas the maximum error, always found at the node next to a corner, converges only
+with first order (observed order $1.00$). In \cref{fig:convergence} the curve of the maximum error of
+(a) is therefore parallel to the $h$ line and all others to the $h^2$ line. The corner singularity
+pollutes the solution locally but barely affects the global accuracy. The price of refinement is
+computational: the number of unknowns grows as $h^{-2}$ and the solve time grows somewhat faster
+(last column of \cref{tab:convergence}; the timings vary by tens of percent between runs).
+
+\subsection{Faster solution for zero lateral flux (Test 6)}\label{sec:test6}
+
+With zero flux and constant boundary concentrations, the problem is invariant under translation in
+$x$, so the solution does not depend on $x$. The column-replicated solution of the one-dimensional
+problem $\rho_{j-1} - 2\rho_j + \rho_{j+1} = 0$ satisfies every equation of the two-dimensional system
+(the $x$ differences vanish and the ghost nodes mirror their neighbours), and since the
+two-dimensional solution is unique, the two coincide. This allows three increasingly radical
+speed-ups that do not change the result:
+\begin{enumerate}\setlength{\itemsep}{2pt}
+  \item solve the tridiagonal one-dimensional problem with $N_y - 2$ unknowns in $\bigO{N_y}$
+    operations instead of the two-dimensional problem with $N_x(N_y-2)$ unknowns;
+  \item use $N_y = 3$, because the scheme is exact for linear profiles, and interpolate linearly;
+  \item skip the solve and evaluate the closed form, combined with the unit solution of Test~3 for
+    arbitrary pairs of concentrations.
+\end{enumerate}
+For a $401\times401$ mesh the sparse two-dimensional solve with $159\,999$ unknowns takes
+$422\,\mathrm{ms}$, the banded one-dimensional solve with 399 unknowns $1.5\,\mathrm{ms}$ (a speed-up
+of about 290) and the closed form $0.04\,\mathrm{ms}$, while the results agree to
+$1.3\times10^{-11}\,\mathrm{mol\,m^{-3}}$. The reduction requires $x$-independent data: non-uniform
+boundary concentrations or non-zero fluxes break the translation invariance, and then the full
+two-dimensional problem must be solved.
+
+\subsection{Different boundary conditions (Test 7)}\label{sec:test7}
+
+We keep $\rhoUpper = 100$ and $\rhoLower = 50\,\mathrm{mol\,m^{-3}}$ and vary the lateral fluxes on a
+$101\times101$ mesh ($h = 0.1\,\mathrm{mm}$). According to Test~5 this gives a root-mean-square error
+below $10^{-3}\,\mathrm{mol\,m^{-3}}$ and a maximum error of about $0.02\,\mathrm{mol\,m^{-3}}$ even
+next to the corners, negligible against the concentration range of $50\,\mathrm{mol\,m^{-3}}$.
+\Cref{fig:test7} shows the four cases and \cref{tab:test7} their extrema and boundary fluxes.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.92\linewidth]{figures/fig_07.pdf}
+  \caption{Test~7: concentration fields for $\rhoUpper = 100$, $\rhoLower = 50\,\mathrm{mol\,m^{-3}}$
+    and four combinations of lateral fluxes on a $101\times101$ mesh. Black lines are isolines,
+    white lines are streamlines of the diffusion flux $\bj = -D\grad\rho$.}
+  \label{fig:test7}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \caption{Test~7: extrema of the concentration (in $\mathrm{mol\,m^{-3}}$, position in mm) and
+    outward fluxes per unit depth through the boundaries (in $\mathrm{nmol\,m^{-1}\,s^{-1}}$).}
+  \label{tab:test7}
+  \small
+  \begin{tabular}{lrrrrrrr}
+    \toprule
+    Case & min & at $(x,y)$ & max & at $(x,y)$ & upper & lower & sides \\
+    \midrule
+    (a) in left, out right     & 49.89 & $(10.0, 0.1)$ & 100.11 & $(0.0, 9.9)$  & $-50.0$ & $+50.0$ & $0.0$ \\
+    (b) inflow both sides      & 50.00 & $(0.0, 0.0)$  & 100.17 & $(10.0, 9.8)$ & $-30.0$ & $+70.0$ & $-40.0$ \\
+    (c) outflow both sides     & 49.83 & $(0.0, 0.2)$  & 100.00 & $(0.0, 10.0)$ & $-70.0$ & $+30.0$ & $+40.0$ \\
+    (d) strong inflow left     & 50.00 & $(0.0, 0.0)$  & 102.28 & $(0.0, 9.1)$  & $-30.0$ & $+70.0$ & $-40.0$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Without lateral fluxes, diffusion carries matter from the upper to the lower boundary along straight
+vertical flux lines (Test~2). The lateral fluxes superimpose a horizontal component on this
+background.
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \emph{(a) Through-flow.} Matter entering on the left raises the concentration there and
+    matter leaving on the right lowers it; the isolines tilt and the flux lines bend from left to
+    right. Since the net lateral flux is zero, the fluxes through the upper and lower boundaries are
+    the same as in Test~2.
+  \item \emph{(b) Inflow through both sides.} The concentration rises towards both lateral
+    boundaries, and the isolines bend upwards there. The added matter must leave through the Dirichlet
+    boundaries, so less matter enters at the top and more leaves at the bottom (\cref{tab:test7}). The
+    maximum exceeds $\rhoUpper$ and lies on a lateral boundary next to an upper corner.
+  \item \emph{(c) Outflow through both sides} is the mirror image of (b): the isolines bend downwards
+    and the minimum falls below $\rhoLower$ on a lateral boundary next to a lower corner.
+  \item \emph{(d) One-sided inflow} combines (a) and (b): a pronounced concentration maximum of
+    $102.3\,\mathrm{mol\,m^{-3}}$ forms at the upper end of the inflow boundary, the flux lines fan
+    out from the left edge, and the right boundary acts as a symmetry plane.
+\end{itemize}
+
+\paragraph{Behaviour towards the boundaries.} On the Dirichlet boundaries the isolines run parallel to
+the boundary, since the concentration is constant there. On the Neumann boundaries the normal
+derivative is fixed, $\partial\rho/\partial n = -\bar j/D$: for zero flux the isolines meet the
+boundary at right angles, while a prescribed flux tilts them so that the gradient points away from an
+inflow and towards an outflow boundary. Towards the corners the two conditions conflict (Test~4): the
+isolines crowd together, the flux lines converge and the flux density becomes singular, so the flux
+through the Dirichlet boundaries is concentrated next to the corners. In every case the extrema lie on
+the boundary, as required by the maximum principle (\cref{rem:meanvalue}), and the net outward flux
+through all four boundaries vanishes to within $10^{-11}\,\mathrm{nmol\,m^{-1}\,s^{-1}}$, as it must
+in a stationary state without sources.
+
+% ===============================================================
 \section{Summary}\label{sec:summary}
 % ===============================================================
 
@@ -1093,8 +1412,14 @@ is sparse, pentadiagonal and block tridiagonal, irreducibly diagonally dominant 
 nonsingular M-matrix with real positive eigenvalues; the asymmetry caused by the Neumann
 rows is removed by a diagonal scaling. These properties guarantee a unique discrete
 solution that is non-negative for physically admissible data and depends monotonically on
-them, and they permit efficient sparse direct or iterative solvers. Part~II implements this system for arbitrary domain sizes, node
-numbers and boundary values, and verifies it against the test problems of Task~5.
+them, and they permit efficient sparse direct or iterative solvers. The implementation of
+\cref{sec:task5} assembles this system for arbitrary domain sizes, node numbers and boundary values.
+It reproduces uniform and linear profiles to round-off; by linearity a single normalized simulation
+describes all pairs of boundary concentrations; the scheme converges with second order, except for the
+maximum error next to the corners, where incompatible boundary conditions create a singularity and the
+order drops to one; for zero lateral flux the problem reduces exactly to one dimension; and lateral
+fluxes tilt the isolines at the Neumann boundaries and concentrate the flux at the corners while the
+global mass balance is satisfied to round-off.
 
 % ===============================================================
 \begin{thebibliography}{99}

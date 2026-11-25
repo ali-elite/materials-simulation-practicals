@@ -132,7 +132,9 @@
   window of 5--50\,mJ/m$^2$ would require $K_c \approx 4\cdot10^{-10}$--$4\cdot10^{-8}$\,J/m, and in
   every case the prescribed \SI{10}{\nano\metre} grid is too coarse to resolve the interface. A 2D
   simulation from $c = 0.195$ shows spinodal decomposition into $\gamma$ and $\gamma'$ domains with a
-  characteristic wavelength of $\SI{13}{\nano\metre}$, as linear stability theory predicts.
+  characteristic wavelength of $\SI{13}{\nano\metre}$, as linear stability theory predicts. The
+  simulations are in the Jupyter notebook of Part~II; all their figures and results are included in
+  this report.
 
 \tableofcontents
 \clearpage
@@ -155,7 +157,8 @@ This report covers the theory of the method (\cref{sec:model}), its finite volum
 (\cref{sec:fvm}) and three applications: single-component solidification in one dimension
 (\cref{sec:task1}), the bulk energy coefficient of the Ni--Al $\gamma/\gamma'$ system
 (\cref{sec:task2}), and the gradient energy coefficient together with a two-dimensional spinodal
-decomposition (\cref{sec:task3}). The simulations are in Part~II.
+decomposition (\cref{sec:task3}). The simulations are run in the Jupyter notebook of Part~II, and
+their figures and results are presented in those sections.
 
 \begin{table}[ht]
   \centering
@@ -298,7 +301,7 @@ only if all coefficients stay positive, which for diffusion requires
 $\Delta t < \Delta x^2/(2\Gamma)$ in 1D (half that in 2D), and for the fourth-order Cahn--Hilliard
 operator $\Delta t \propto \Delta x^4$. If they are taken at the new level, a linear system must be
 solved per step: the scheme is \emph{implicit}, unconditionally stable for diffusion, but more
-expensive per step. Part~II uses both and illustrates the trade-off: FiPy's implicit solve runs the
+expensive per step. The simulations use both and illustrate the trade-off: FiPy's implicit solve runs the
 Allen--Cahn problem at $\Delta t = 1$, whereas the explicit update fails beyond $\Delta t = 0.5$; for
 the spinodal stage of the Cahn--Hilliard problem the explicit scheme is used and its step limited to
 $\Delta t \approx 10^{-5}$\,s (\cref{sec:spinodal}).
@@ -363,14 +366,14 @@ F_{\mathrm{grad}} = \sigma/2$. These three relations organize the whole paramete
 
 \subsection{Simulation results}\label{sec:task1results}
 
-The simulation of Part~II starts from a sharp step and relaxes it with FiPy. To run at the prescribed
+The simulation starts from a sharp step on a 1D grid with $\Delta x = 1$ and relaxes it with FiPy. To run at the prescribed
 $\Delta t = 1$, the reaction term is linearized about the old value and split into
 $S_0 + S_1\phi$ with $S_1 = -L\,\partial^2\fb/\partial\phi^2$, the second part treated implicitly; a
 fully explicit update is unstable for $\Delta t \ge 0.5$ (\cref{tab:explicit}).
 
 \begin{table}[ht]
   \centering
-  \caption{Stability of the explicit update for $f_0 = K_\phi = L = \Delta x = 1$ (Part~II). Both
+  \caption{Stability of the explicit update for $f_0 = K_\phi = L = \Delta x = 1$. Both
     the diffusion limit $\Delta x^2/(2LK_\phi)$ and the reaction limit $1/(2Lf_0)$ equal $0.5$.}
   \label{tab:explicit}
   \begin{tabular}{lcccccc}
@@ -378,20 +381,44 @@ fully explicit update is unstable for $\Delta t \ge 0.5$ (\cref{tab:explicit}).
     $\Delta t$ & 0.10 & 0.25 & 0.40 & 0.50 & 0.60 & 1.00 \\
     \midrule
     explicit & stable & stable & stable & unstable & unstable & unstable \\
+    $\max|\phi|$ & 1.000 & 1.000 & 1.103 & $1.0\times10^{6}$ & $1.5\times10^{9}$ & $1.5\times10^{4}$ \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-With the reference parameters the relaxed profile coincides with \cref{eq:tanh} to within $0.02$, the
-free energy decreases monotonically to a plateau, and $F_{\mathrm{bulk}}/F_{\mathrm{grad}} = 1.004$
-confirms the equipartition of \cref{eq:firstint}. The plateau lies $7\,\%$ below the analytic
+\Cref{fig:ac1d} shows the result for the reference parameters $f_0 = K_\phi = L = 1$. The relaxed
+profile coincides with \cref{eq:tanh} to within $0.018$ (left). The total energy reaches its plateau
+after about ten time steps (centre): the gradient energy of the initial step falls while the bulk energy
+rises, until the two meet at $F_{\mathrm{bulk}} = 0.1097$ and $F_{\mathrm{grad}} = 0.1092$, so
+$F_{\mathrm{bulk}}/F_{\mathrm{grad}} = 1.004$ confirms the equipartition of \cref{eq:firstint}. The
+energy density (right) is concentrated in the interface, where the bulk and the gradient contributions
+have the same shape.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_01.pdf}
+  \caption{1D Allen--Cahn relaxation of a step with $f_0 = K_\phi = L = 1$. Left: final order
+    parameter and the analytic $\tanh$ profile. Centre: total, bulk and gradient energy against time,
+    with the analytic interface energy $\sigma$. Right: bulk, gradient and total energy density across
+    the interface.}
+  \label{fig:ac1d}
+\end{figure} The plateau lies $7\,\%$ below the analytic
 $\sigma = 0.2357$, because the interface is only $\lambda = 2.8$ cells wide and the discrete gradient
 underestimates $|\nabla\phi|^2$. \Cref{tab:resolution} shows that the error disappears as $K_\phi$
-widens the interface: four to six cells are needed for an error of one percent.
+widens the interface: four to six cells are needed for an error of one percent. On a logarithmic
+scale the error falls almost linearly with the interface width (\cref{fig:resolution}).
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.55\linewidth]{figures/fig_03.pdf}
+  \caption{Relative error of the simulated interface energy against the interface width
+    $\lambda = 4\delta$ in grid cells; the dotted line marks $1\,\%$.}
+  \label{fig:resolution}
+\end{figure}
 
 \begin{table}[ht]
   \centering
-  \caption{Interface energy against resolution ($f_0 = 1$, $\Delta x = 1$, Part~II).}
+  \caption{Interface energy against resolution ($f_0 = 1$, $\Delta x = 1$).}
   \label{tab:resolution}
   \begin{tabular}{rrrrr}
     \toprule
@@ -408,17 +435,32 @@ widens the interface: four to six cells are needed for an error of one percent.
 \end{table}
 
 \paragraph{Influence of the coefficients.}
+\Cref{fig:coeffs} shows the relaxed profiles for $f_0$ and $K_\phi$ between $0.25$ and $4$ and the
+energy relaxation for three mobilities.
 \begin{itemize}\setlength{\itemsep}{2pt}
   \item $f_0$ sets the height of the barrier between the two wells. Raising it penalizes intermediate
     $\phi$ and makes the interface \emph{thinner}, $\delta\propto f_0^{-1/2}$, and more energetic,
-    $\sigma \propto f_0^{1/2}$. For $f_0 = 4$ the interface collapses to about two cells and the
-    simulated $\sigma$ is $40\,\%$ too low --- a pure resolution artefact.
+    $\sigma \propto f_0^{1/2}$. The measured interface width falls from 5.95 to 2.31 cells as $f_0$
+    rises from $0.25$ to $4$. For $f_0 = 4$ the interface collapses to about two cells and the
+    simulated $\sigma$ ($0.284$ against $0.471$) is $40\,\%$ too low --- a pure resolution artefact.
   \item $K_\phi$ penalizes gradients. Raising it makes the interface \emph{wider},
-    $\delta\propto K_\phi^{1/2}$, and again more energetic, $\sigma\propto K_\phi^{1/2}$. Since it widens
-    the interface it also improves the resolution.
+    $\delta\propto K_\phi^{1/2}$, and again more energetic, $\sigma\propto K_\phi^{1/2}$: the width rises
+    from 2.31 to 5.95 cells and $\sigma$ from $0.071$ to $0.464$. Since it widens the interface it also
+    improves the resolution.
   \item $L$ appears only in the time derivative. The equilibrium profile and energy are identical for
-    $L = 0.1$, $0.5$ and $2$; only the time to reach them scales as $1/L$.
+    $L = 0.1$, $0.5$ and $2$ (width 3.40 cells, $F = 0.2189$); only the time to reach them scales as
+    $1/L$ (right panel of \cref{fig:coeffs}).
 \end{itemize}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_02.pdf}
+  \caption{Influence of the coefficients of the Allen--Cahn model. Left and centre: relaxed profiles
+    for $f_0$ and $K_\phi$ of $0.25$, $1$ and $4$ (the other coefficients equal to one). Right: total
+    energy against time for three mobilities $L$; the dashed line is the analytic $\sigma$ for
+    $f_0 = K_\phi = 1$.}
+  \label{fig:coeffs}
+\end{figure}
 $f_0$ is therefore fixed by thermodynamics, $K_\phi$ is the free parameter that sets the interface
 energy, and $L$ is fitted to kinetic data such as interface velocities.
 
@@ -456,10 +498,35 @@ $\Delta c/2 = 0.035$ and
   f_{0,V} = \frac{f_0}{V_m} \approx \SI{1e13}{\joule\per\metre\cubed}
 \end{equation}
 with $V_m = \SI{1e-5}{\cubic\metre\per\mole}$. The fourth power makes $f_0$ sensitive to how the minima
-are read off: shifting one of them by $\pm0.005$ changes $f_0$ by about $30\,\%$ (Part~II), so only the
-order of magnitude is meaningful --- which is all a phenomenological fit can claim anyway. The large
+are read off: shifting one of them by $\pm0.005$ changes $f_0$ by about $30\,\%$
+(\cref{tab:f0sens}), so only the order of magnitude is meaningful --- which is all a phenomenological fit can claim anyway. The large
 number reflects the narrow two-phase field: a barrier of only $\SI{150}{\joule\per\mole}$ is built up
-over a composition difference of $0.07$.
+over a composition difference of $0.07$. \Cref{fig:nial} shows the resulting bulk energy density.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.6\linewidth]{figures/fig_04.pdf}
+  \caption{Bulk energy density $f_0(\cgp - c)^2(c - \cg)^2$ of Ni--Al at 1300\,K with
+    $f_0 = \SI{9.99e7}{\joule\per\mole}$, $\cg = 0.16$ and $\cgp = 0.23$. The barrier at
+    $c = 0.195$ is $\Delta f = \SI{149.9}{\joule\per\mole}$.}
+  \label{fig:nial}
+\end{figure}
+
+\begin{table}[ht]
+  \centering
+  \caption{Sensitivity of $f_0$ to the equilibrium compositions read off the figure of the script.}
+  \label{tab:f0sens}
+  \begin{tabular}{ccc}
+    \toprule
+    $\cg$ & $\cgp$ & $f_0$ [J/mol] \\
+    \midrule
+    0.160 & 0.225 & $1.34\times10^{8}$ \\
+    0.160 & 0.230 & $9.99\times10^{7}$ \\
+    0.160 & 0.235 & $7.58\times10^{7}$ \\
+    0.155 & 0.230 & $7.58\times10^{7}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 % ===============================================================
 \section{The gradient energy coefficient (Task 3)}\label{sec:task3}
@@ -500,14 +567,15 @@ The substitution $u = (c - \cg)/\Delta c$ maps the Ni--Al double well onto the s
   \qquad
   \sigma = \frac{\Delta c^3\sqrt{2f_{0,V}K_c}}{6}.
 \end{equation}
-\Cref{tab:kc} evaluates them and compares with the 1D Cahn--Hilliard simulations of Part~II, which
-reproduce $\sigma$ to $0.4\,\%$ with $F_{\mathrm{bulk}} = F_{\mathrm{grad}}$ to better than $2\,\%$ on a
-grid with $\Delta x = \delta/3$.
+\Cref{tab:kc} evaluates them and compares with 1D Cahn--Hilliard simulations, which reproduce $\sigma$
+to $0.4\,\%$ with $F_{\mathrm{bulk}} = F_{\mathrm{grad}}$ to better than $2\,\%$ on a grid with
+$\Delta x = \delta/3$. \Cref{fig:kc} shows the simulated profile for the chosen $K_c$ and the interface
+energy over the whole range of $K_c$ together with the experimental window.
 
 \begin{table}[ht]
   \centering
   \caption{Interface energy and half-width of the $\gamma/\gamma'$ interface as functions of $K_c$.
-    The simulated values (Part~II) use $\Delta x = \delta/3$; the last column gives $\delta$ in units of
+    The simulated values use $\Delta x = \delta/3$; the last column gives $\delta$ in units of
     the grid spacing $\Delta x = \SI{10}{\nano\metre}$ prescribed in the script.}
   \label{tab:kc}
   \begin{tabular}{rrrrr}
@@ -549,6 +617,17 @@ an order of magnitude below the suggested range. Since $\sigma\propto\Delta c^3\
 itself is uncertain by about $30\,\%$ (\cref{sec:task2}), this discrepancy is within the accuracy of
 the input data.
 
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_05.pdf}
+  \caption{Left: equilibrium $\gamma/\gamma'$ composition profile from a 1D Cahn--Hilliard simulation
+    with $K_c = \SI{1e-7}{\joule\per\metre}$ (markers: grid points, $\Delta x = \SI{0.337}{\nano\metre}$;
+    dotted lines: equilibrium compositions), with the bulk, gradient and total interface energies in
+    J/m$^2$. Right: interface energy against $K_c$ from \cref{eq:kcrel} and from the simulations, with
+    the experimental window (green) and the range of $K_c$ suggested by the script (orange).}
+  \label{fig:kc}
+\end{figure}
+
 \subsection{Spinodal decomposition in two dimensions}\label{sec:spinodal}
 
 Starting the 2D simulation at $c = 0.195$, the top of the barrier, places the alloy inside the
@@ -563,11 +642,25 @@ effective diffusion coefficient that the gradient energy limits at short wavelen
 $K_c = \SI{1e-7}{\joule\per\metre}$ the fastest-growing wavelength is
 $2\pi/k_{\max} = \SI{12.7}{\nano\metre}$ and its growth rate $R = \SI{6.0}{\per\second}$.
 
-The simulation of Part~II on a $\SI{65}{\nano\metre}\times\SI{65}{\nano\metre}$ periodic domain shows
-the expected sequence: the white noise first decays at short wavelengths, then a band of wavelengths
-around $\SI{13}{\nano\metre}$ is amplified into an interconnected labyrinth of $\gamma$- and
-$\gamma'$-rich domains, whose compositions approach $0.16$ and $0.23$ within about two seconds. The mean composition is conserved and the free energy decreases
-monotonically. Two numerical remarks apply. First, the FiPy formulation used for the 1D interface froze
+The simulation runs on a $\SI{64.7}{\nano\metre}\times\SI{64.7}{\nano\metre}$ periodic domain with
+$\Delta x = \SI{0.505}{\nano\metre}$ and $\Delta t = \SI{1.3e-5}{\second}$, i.e.\ \num{153331} steps to
+$t = \SI{2}{\second}$. \Cref{fig:spinodal} shows the expected sequence. The white noise of the initial
+state first decays at short wavelengths; at $t = \SI{0.5}{\second}$ a faint pattern with a wavelength of
+about $\SI{13}{\nano\metre}$ has emerged. It is amplified into an interconnected labyrinth of $\gamma$-
+and $\gamma'$-rich domains, whose compositions at $\SI{2}{\second}$ span $0.159$ to $0.230$, i.e.\ the
+equilibrium values $0.16$ and $0.23$. The mean composition is conserved ($0.195$ at the start,
+$0.195012$ at the end). The free energy decreases monotonically: a short initial drop as the noise is
+smoothed, a plateau while the unstable modes are still small, a steep fall around
+$t \approx \SI{1}{\second}$ when the domains form, and a slower decrease as they start to coarsen.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_06.pdf}
+  \caption{Spinodal decomposition of Ni--Al from $c = 0.195$ with small random noise on a
+    $\SI{64.7}{\nano\metre}\times\SI{64.7}{\nano\metre}$ periodic domain. Five snapshots of the
+    composition between $t = 0$ and $\SI{2}{\second}$ and the change of the total free energy.}
+  \label{fig:spinodal}
+\end{figure} Two numerical remarks apply. First, the FiPy formulation used for the 1D interface froze
 at the initial noise level once the coefficient $\partial^2\fb/\partial c^2$ became negative, while an
 explicit finite volume update of the same equation decomposed as \cref{eq:growth} predicts; the 2D run
 therefore uses the explicit scheme. Second, the explicit step is limited by the fourth-order term to

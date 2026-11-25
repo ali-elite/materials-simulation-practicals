@@ -152,8 +152,11 @@
   global stiffness matrix whose null space is the rigid-body translation; imposing one
   Dirichlet condition by a permutation of the global system removes that singularity. For
   one element we solve the resulting $2\times2$ system by hand and recover the analytical
-  tip displacement $u(l) = Fl/(EA)$ exactly. The implementation, verification and the
-  six-element analysis of Task~8.1 are reported in Part~II.
+  tip displacement $u(l) = Fl/(EA)$ exactly. A Python implementation (Part~II) reproduces every
+  hand calculation to machine precision, solves the six-element problem of Task~8.1 exactly for
+  several sets of boundary conditions, and shows $\bigO{h^2}$ convergence of the displacement and
+  $\bigO{h}$ convergence of the stress for a tapered bar; all its figures and results are included
+  in this report.
 
 \tableofcontents
 \clearpage
@@ -199,9 +202,8 @@ in paraphrased form in a shaded box at the beginning of the section that answers
 \begin{table}[ht]
   \centering
   \caption{Correspondence between the tasks of the tutorial script and this report. Tasks
-    marked ``Part~II'' are implementation tasks and are carried out in the accompanying
-    Jupyter notebook \texttt{fem1d.ipynb}; the sections given for them discuss the
-    underlying theory and the results.}
+    marked ``Part~II'' are implementation tasks; the code is the accompanying Jupyter notebook
+    \texttt{fem1d.ipynb}, and its figures and results are presented in the sections given.}
   \label{tab:taskmap}
   \begin{tabularx}{\linewidth}{lXl}
     \toprule
@@ -701,15 +703,27 @@ drawn on each element. The interpolated displacement field and its vector form a
 The two shape functions span the space of polynomials of degree at most one on the
 element, $\operatorname{span}\{N_1, N_2\} = \operatorname{span}\{1, x\} = \mathcal{P}_1$.
 Interpolation reproduces exactly those functions that already lie in this space, and only
-those. In the numerical test of Part~II we therefore interpolate three functions:
+those. To test this, we interpolate three functions on the element $[0, 2]$
+(\cref{fig:shapefun}):
 \begin{itemize}\setlength{\itemsep}{1pt}
-  \item $f(x) = 3x + 2$, an affine function --- reproduced exactly, error $0$ to machine
-    precision;
+  \item $f(x) = 3x + 2$, an affine function --- reproduced exactly, maximum error
+    $4.4\times10^{-16}$;
   \item $f(x) = x^2$, a quadratic --- not reproduced; the interpolation is the secant, and
-    the error is the familiar $-\tfrac{1}{8}h^2 f''$ at the element midpoint;
-  \item $f(x) = \sin(\pi x / l)$, a transcendental function --- not reproduced; the error
-    again scales as $\bigO{h^2}$.
+    the error is the familiar $-\tfrac{1}{8}h^2 f''$ at the element midpoint, here $1.0$;
+  \item $f(x) = \sin(\pi x / 2)$, a transcendental function --- not reproduced; both nodal
+    values are zero, so the interpolant vanishes identically and the error reaches $1.0$ at the
+    midpoint. On smaller elements the error scales as $\bigO{h^2}$.
 \end{itemize}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_01.pdf}
+  \caption{Left: the linear shape functions $N_1$ and $N_2$ on the element $[0, 2]$; their sum is
+    one everywhere. Right: three functions (solid) and their linear interpolants (dashed). The
+    interpolant of the affine function coincides with it; the quadratic is replaced by its secant
+    and the sine, whose nodal values are both zero, by the zero function.}
+  \label{fig:shapefun}
+\end{figure}
 Constants are contained in $\mathcal{P}_1$, so a linear element can represent a rigid-body
 translation exactly, which is a necessary condition for convergence (the \emph{patch
 test}).
@@ -743,7 +757,25 @@ Differentiating~\eqref{eq:shapefun} gives the constant row vector
 \end{equation}
 The interpolated strain in a linear element is thus the difference quotient of the two
 nodal displacements, which is precisely the finite-difference approximation of Practical~1
-and reflects the piecewise constant strain discussed above. Summarizing
+and reflects the piecewise constant strain discussed above. \Cref{fig:bmatrix} shows the two
+constant derivatives $B_1 = -1/h$ and $B_2 = +1/h$ on the element $[0, 2]$ and the interpolated
+gradients of the three test functions. The gradient of the affine function is recovered exactly;
+for the quadratic and the sine the constant approximation equals the exact derivative only at the
+single point where the secant is parallel to the tangent (the mean value theorem), and the maximum
+errors are $2.0$ and $\pi/2 = 1.571$. The error of the gradient is $\bigO{h}$, one order lower than
+that of the interpolant itself, which is the reason the stress converges one order more slowly than
+the displacement.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_02.pdf}
+  \caption{Left: the shape function derivatives $B_1 = -1/h$ and $B_2 = +1/h$ for $h = 2$. Right:
+    exact derivatives of the three test functions of \cref{fig:shapefun} (solid) and the piecewise
+    constant derivatives of their interpolants (dashed).}
+  \label{fig:bmatrix}
+\end{figure}
+
+Summarizing
 \eqref{eq:interp} and~\eqref{eq:bmatrix},
 \begin{equation}\label{eq:NB}
   \boxed{\;\tilde{u}(x) = \bN(x)\cdot\buh
@@ -787,7 +819,9 @@ $\zeta_j \in [0,1]$ in the element and to map them by
 $x_j = x_1 + \zeta_j\,(x_2 - x_1)$, because the same table of $(\lambda,\zeta)$ then serves
 every element of the mesh. The routine implemented in Part~II takes the integrand as a
 callable, so the \emph{same} function integrates a scalar body force and the
-$2\times2$ matrix integrand $\bB^{\mathsf{T}}EA\bB$ without modification.
+$2\times2$ matrix integrand $\bB^{\mathsf{T}}EA\bB$ without modification. As required, the first
+version accepts only $n = 2$: it returns $\int_0^1 x\,\mathrm{d}x = 0.5$ exactly and raises an
+exception for $n = 3$.
 
 \subsection{Closed Newton--Cotes rules and their exactness (Task 5.2)}\label{sec:exactness}
 
@@ -826,9 +860,26 @@ $\mathcal{P}_{n-1}$, so for $f = x^{n}$ it suffices to look at that monomial alo
 $n$ odd the exponent $n$ is odd, the exact integral $\int_{-1}^{1}x^{n}\,\mathrm{d}x$
 vanishes by antisymmetry, and so does the symmetric weighted sum; hence $E[x^{n}] = 0$ and
 the rule is exact on $\mathcal{P}_{n}$. This is why Simpson's rule ($n = 3$), built from a
-parabola, integrates cubics exactly. The numerical test in Part~II confirms the last
-column of \cref{tab:nc}: the trapezoidal rule fails first at degree $2$, Simpson and the
-$3/8$ rule at degree $4$.
+parabola, integrates cubics exactly. The numerical test, which integrates the monomials $x^p$ over
+$[0,1]$ and compares with $1/(p+1)$, confirms the last column of \cref{tab:nc}
+(\cref{tab:ncerr}): the trapezoidal rule fails first at degree $2$, Simpson and the $3/8$ rule at
+degree $4$. The $3/8$ rule thus reaches the same degree as Simpson's rule with one point more.
+
+\begin{table}[ht]
+  \centering
+  \caption{Absolute error of the closed Newton--Cotes rules for $\int_0^1 x^p\,\mathrm{d}x$
+    (``ok'': exact to machine precision).}
+  \label{tab:ncerr}
+  \begin{tabular}{crrrrrrrc}
+    \toprule
+    $n$ & $p=0$ & 1 & 2 & 3 & 4 & 5 & 6 & exact up to degree \\
+    \midrule
+    2 & ok & ok & $2\times10^{-1}$ & $2\times10^{-1}$ & $3\times10^{-1}$ & $3\times10^{-1}$ & $4\times10^{-1}$ & 1 \\
+    3 & ok & ok & ok & ok & $8\times10^{-3}$ & $2\times10^{-2}$ & $3\times10^{-2}$ & 3 \\
+    4 & ok & ok & ok & ok & $4\times10^{-3}$ & $9\times10^{-3}$ & $2\times10^{-2}$ & 3 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \paragraph{How many points the element integrals need.}
 For \emph{linear} shape functions and constant $EA$ the stiffness integrand
@@ -926,8 +977,10 @@ mesh refinement: the exact solution is linear in $x$, the finite element space o
 elements contains it, and the Galerkin solution is the best approximation from that space
 in the energy norm --- so it \emph{is} the exact solution. The computed stress
 $\sigma = E\,\bB\cdot\buh = \num{210000}\cdot\num{4.7619e-5}/50 = 0.2\,\mathrm{N/mm^2}$
-likewise matches $F/A$ exactly. The numerical verification in Part~II reproduces both to
-machine precision.
+likewise matches $F/A$ exactly. The code reproduces both: it gives
+$\bK^e = \num{105000}\,[[1,-1],[-1,1]]\,\mathrm{N/mm}$ (symmetric, zero row sums, rank one),
+$\hat u_2 = \num{4.761904761905e-5}\,\mathrm{mm}$ with a relative deviation of $1.4\times10^{-16}$
+from $Fl/(EA)$, $\sigma = 0.2\,\mathrm{N/mm^2}$ and the reaction $R_1 = -5\,\mathrm{N}$.
 
 \paragraph{Choice of solver.}
 The global stiffness matrix of the one-dimensional bar is, after the Dirichlet reduction,
@@ -1073,9 +1126,13 @@ diagonal of~\eqref{eq:springsystem}.
   interpretation?
 \end{task}
 
-Part~II prints the assembled matrix for three unit springs and verifies entry by entry
-that it equals $\bK$ of~\eqref{eq:springsystem}. The matrix has the following properties,
-all of which are checked numerically in Part~II.
+The assembly routine, applied to three unit springs, returns
+\begin{equation*}
+  \bK = \begin{bmatrix} 1 & -1 & 0 & 0 \\ -1 & 2 & -1 & 0 \\ 0 & -1 & 2 & -1 \\ 0 & 0 & -1 & 1 \end{bmatrix},
+\end{equation*}
+identical entry by entry to~\eqref{eq:springsystem}. Its eigenvalues are $0$, $0.586$, $2$ and
+$3.414$, its rank is $3$ of $4$, and $\bK\cdot[1,1,1,1]^{\mathsf{T}} = \bm{0}$. The matrix has the
+following properties, all of which the code checks numerically.
 \begin{enumerate}\setlength{\itemsep}{2pt}
   \item \textbf{Symmetric}, $\bK = \bK^{\mathsf{T}}$. This is inherited from the symmetry
     of each $\bK^e$, which in turn follows from the major symmetry of the stiffness tensor
@@ -1221,8 +1278,12 @@ so the reduced system for $[u_2, u_3]^{\mathsf{T}}$ reads
   u_2 = \frac{\bar{u}}{3},
   \quad u_3 = \frac{2\bar{u}}{3},
 \end{equation}
-the expected uniform stretch of all three springs. Part~II reproduces both test cases and
-additionally checks that the reaction forces recovered from the deleted rows sum to zero.
+the expected uniform stretch of all three springs. The routine reproduces both test cases. With
+$u_1 = 0$ and $F = 5$ at node 4 it gives $\bd = [0, 5, 10, 15]^{\mathsf{T}}$ (for $c = 1$) and the
+reaction $R_1 = -5$. With $u_1 = 0$ and $u_4 = \bar u = 0.3$ the reduced right-hand side is
+$[0, 0.3]^{\mathsf{T}}$, the solution $\bd = [0, 0.1, 0.2, 0.3]^{\mathsf{T}}$ and the reactions
+$\mp 0.1$, which sum to zero. Dropping the term $\bK\bd_\Gamma$ instead gives the wrong result
+$\bd = [0, 0, 0, 0.3]^{\mathsf{T}}$.
 
 % ===============================================================
 \section{Results of the finite element analysis}\label{sec:results}
@@ -1235,8 +1296,8 @@ additionally checks that the reaction forces recovered from the deleted rows sum
   several forces and/or prescribed displacements.
 \end{task}
 
-\Cref{tab:results} summarizes the results obtained in Part~II; the plots are given there.
-The sequence of steps is the one listed in the script: derive the governing equation
+\Cref{tab:results} summarizes the results and \cref{fig:caseA,fig:caseB,fig:caseC,fig:caseD,fig:convergence,fig:caseE}
+show them. The sequence of steps is the one listed in the script: derive the governing equation
 (\cref{sec:bar}), formulate the weak form (\cref{sec:weakbar}), discretize
 (\cref{sec:shape}), integrate numerically (\cref{sec:quadrature}), assemble
 (\cref{sec:assembly}), impose boundary conditions (\cref{sec:dirichlet}), solve, and
@@ -1266,10 +1327,115 @@ post-process the stress as $\tilde\sigma = E\,\bB\cdot\buh$ on each element.
       & exact \\
     Tapered bar, $A(x)$ linear
       & $\bigO{h^2}$ convergence of the displacement, $\bigO{h}$ of the stress
-      & see Part~II \\
+      & rates $1.99$, $0.95$ \\
+    Own weight, $\rho g$
+      & nodal displacements exact, $\sigma$ piecewise constant with $\bigO{h}$ error
+      & $<10^{-14}$ nodal \\
     \bottomrule
   \end{tabularx}
 \end{table}
+
+\paragraph{Case A: the problem of Task~2.3 with six elements.}
+\Cref{fig:caseA} shows the displacement and the stress for $u_1 = 0$ and $F = 5\,\mathrm{N}$ at
+node~7. The nodal displacements increase linearly from $0$ to $\num{4.7619e-5}\,\mathrm{mm}$, the
+stress is $0.2\,\mathrm{N/mm^2}$ on every element, and the reaction at the clamp is
+$-5\,\mathrm{N}$. The largest deviation from the exact solution, relative to the tip displacement,
+is $5.7\times10^{-16}$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_03.pdf}
+  \caption{Case~A: six elements, clamped at $x = 0$ and loaded by $F = 5\,\mathrm{N}$ at
+    $x = l$. Left: nodal displacements (markers, linear between nodes) and the analytical solution.
+    Right: element-wise constant stress and the analytical stress $F/A$.}
+  \label{fig:caseA}
+\end{figure}
+
+\paragraph{Case B: two forces.}
+A second force of $-3\,\mathrm{N}$ at the middle node~4, in addition to $F$ at the tip, is a
+second Neumann condition in the interior. The normal force is then $2\,\mathrm{N}$ in the first
+three elements and $5\,\mathrm{N}$ in the last three, so the stress jumps from $0.08$ to
+$0.2\,\mathrm{N/mm^2}$ at the loaded node and the displacement has a kink there
+(\cref{fig:caseB}). The reaction at the clamp is $-2\,\mathrm{N}$. Linear elements capture this
+without error because the exact displacement is piecewise affine and the mesh has a node at the
+discontinuity.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_04.pdf}
+  \caption{Case~B: forces at the middle node and at the tip. Left: displacement with a kink at the
+    middle node. Right: stress with a jump at the middle node.}
+  \label{fig:caseB}
+\end{figure}
+
+\paragraph{Case C: a prescribed tip displacement.}
+Replacing the force at the tip by the Dirichlet condition $u_7 = \bar u = 10^{-4}\,\mathrm{mm}$ gives a
+uniform stretch: the displacement is linear and the stress is $E\bar u/l = 0.42\,\mathrm{N/mm^2}$ in
+every element (\cref{fig:caseC}). The reactions at the two ends are $\mp EA\bar u/l = \mp
+10.5\,\mathrm{N}$ and sum to $-1.6\times10^{-14}\,\mathrm{N}$, which confirms the non-zero Dirichlet
+implementation of \cref{sec:nonzero}.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_05.pdf}
+  \caption{Case~C: $u_1 = 0$ and a prescribed tip displacement $u_7 = 10^{-4}\,\mathrm{mm}$, no
+    external force. Left: displacement. Right: constant stress $E\bar u/l$.}
+  \label{fig:caseC}
+\end{figure}
+
+\paragraph{Case D: a tapered bar.}
+With a linearly decreasing cross-section $A(x) = A_0(1 - \alpha x/l)$, $\alpha = 0.5$, the exact
+displacement
+\begin{equation}\label{eq:taper}
+  u(x) = \frac{F\,l}{E A_0 \alpha}\,\ln\frac{1}{1 - \alpha x/l}
+\end{equation}
+is logarithmic and no longer lies in the finite element space, so a genuine discretization error
+appears. On 12 elements (\cref{fig:caseD}) the nodal displacements still lie on the analytical
+curve, while the element-wise constant stress approximates the rising stress $F/A(x)$ by a
+staircase. \Cref{fig:convergence} shows the maximum relative errors for 2 to 128 elements: the
+measured rates are $1.99$ for the displacement and $0.95$ for the stress, i.e.\ $\bigO{h^2}$ and
+$\bigO{h}$ as predicted, the stress losing one order because it involves a derivative of the
+interpolant. At the element midpoints the stress is even exact to machine precision (relative error
+below $5\times10^{-14}$). The reason is specific to this problem: Simpson's rule integrates the
+linear $A(x)$ exactly, so $\bK^e = E\bar A_e/h\,[[1,-1],[-1,1]]$ with the mean area $\bar A_e$ of
+the element; the normal force is $F$ in every element, hence $\sigma^e = F/\bar A_e$, and for a linear
+$A$ the mean area is exactly the area at the midpoint. This is the simplest instance of the
+superconvergent stress points used in production codes, and it is the reason the $\bigO{h}$ rate is
+measured against the exact stress over the whole element.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_06.pdf}
+  \caption{Case~D: tapered bar with $A(x) = A_0(1 - x/2l)$ on 12 elements. Left: displacement and
+    the analytical solution~\eqref{eq:taper}. Right: element-wise stress and the analytical stress
+    $F/A(x)$.}
+  \label{fig:caseD}
+\end{figure}
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.55\linewidth]{figures/fig_07.pdf}
+  \caption{Case~D: maximum relative error of the nodal displacement and of the element stress
+    against the element size $h$, with reference slopes $h^2$ and $h$.}
+  \label{fig:convergence}
+\end{figure}
+
+\paragraph{Case E: the bar under its own weight.}
+For a vertical bar clamped at the top, the body force $b = g$ gives the quadratic displacement
+$u(x) = \rho g(2lx - x^2)/(2E)$, which is not in the finite element space either. On ten elements
+(\cref{fig:caseE}) the nodal displacements are nevertheless exact (maximum error
+$1.4\times10^{-21}\,\mathrm{mm}$, tip displacement $\num{4.583839e-7}\,\mathrm{mm}$), a
+superconvergence property of linear elements in one dimension, while the stress is a staircase
+approximation of the linearly decreasing exact stress with an $\bigO{h}$ error. The reaction at the
+clamp equals the weight of the bar, $-0.0963\,\mathrm{N}$.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=\linewidth]{figures/fig_08.pdf}
+  \caption{Case~E: bar of steel hanging under its own weight, ten elements. Left: displacement.
+    Right: element-wise stress and the linearly decreasing analytical stress.}
+  \label{fig:caseE}
+\end{figure}
 
 Three observations deserve comment. First, for the constant-section bar without body force
 the finite element solution is \emph{exact at every mesh size}, for the reason given in
@@ -1311,9 +1477,10 @@ rectangular permutation matrix~\eqref{eq:P} --- removes that mode, makes the red
 positive definite, and allows a Cholesky solve. Solved by hand for a single element, the
 system gives $\hat u_2 = F l/(EA) = \num{4.7619e-5}\,\mathrm{mm}$, which coincides with the
 analytical solution because the exact displacement field is linear and hence contained in
-the finite element space. The implementation of all subroutines, their verification against
-these hand calculations, the six-element analysis with several sets of boundary conditions,
-and the convergence study for a bar with a varying cross-section are reported in Part~II.
+the finite element space. The implementation reproduces all these hand calculations to machine
+precision. The six-element analysis is exact for one or two forces and for a prescribed tip
+displacement, and for problems outside the finite element space --- a tapered bar and a bar under its
+own weight --- it converges with $\bigO{h^2}$ in the displacement and $\bigO{h}$ in the stress.
 
 % ===============================================================
 \begin{thebibliography}{99}
